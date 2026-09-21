@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>2026 釜山親子自由行導航助理 V17.0 (穩定修復版)</title>
+    
+    <!-- Leaflet.js 地圖庫 -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <style>
+        /* =========================================
+           1. 顏色變數與 Apple 視覺重置 (macOS Sequoia 風格)
+           ========================================= */
+        :root {
+            --primary: #0A84FF;         /* 蘋果藍 */
+            --primary-light: #30B0C7;   /* 釜山海洋青 */
+            --secondary: #34C759;       /* 蘋果綠 */
+            --accent: #FF9500;          /* 溫暖橘 */
+            --mom-mode: #FF2D55;        /* 媽媽專屬桃紅 */
+            --naver: #03CF5D;           /* Naver 專屬綠 */
+            --bg: #F2F2F7;              /* iOS 淺灰背景 */
+            --card: rgba(255, 255, 255, 0.9); /* 磨砂玻璃卡片背景 */
+            --timeline-line: rgba(10, 132, 255, 0.2);
+            --text-dark: #1D1D1F;       /* 蘋果深黑 */
+            --text-muted: #86868B;      /* 蘋果灰 */
+        }
+
+        * { 
+            box-sizing: border-box; 
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro SC", "PingFang TC", "Microsoft JhengHei", sans-serif; 
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body { 
+            margin: 0; 
+            background: var(--bg); 
+            background-image: radial-gradient(at 0% 0%, rgba(48, 176, 199, 0.15) 0, transparent 50%),
+                              radial-gradient(at 100% 100%, rgba(10, 132, 255, 0.1) 0, transparent 50%);
+            background-attachment: fixed;
+            color: var(--text-dark); 
+            padding-bottom: 80px; 
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body.mom-theme {
+            background-image: radial-gradient(at 0% 0%, rgba(255, 45, 85, 0.15) 0, transparent 50%),
+                              radial-gradient(at 100% 100%, rgba(255, 149, 0, 0.1) 0, transparent 50%);
+            --timeline-line: rgba(255, 45, 85, 0.25);
+        }
+
+        /* =========================================
+           2. macOS 頂部固定 Header & 靜態即時地圖容器
+           ========================================= */
+        .sticky-header-wrapper {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(25px) saturate(190%);
+            -webkit-backdrop-filter: blur(25px) saturate(190%);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+        }
+
+        .mac-window {
+            padding: 38px 15px 8px;
+            text-align: center;
+            position: relative;
+        }
+
+        .mac-dots { position: absolute; top: 12px; left: 15px; display: flex; gap: 6px; }
+        .mac-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+        .mac-dot.red { background: #FF5F56; }
+        .mac-dot.yellow { background: #FFBD2E; }
+        .mac-dot.green { background: #27C93F; }
+
+        .mac-address-bar {
+            position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.05); border-radius: 6px; padding: 2px 12px; font-size: 10px; color: var(--text-muted); font-weight: 600;
+        }
+
+        .app-title { 
+            font-size: 20px; font-weight: 800; letter-spacing: -0.5px; margin: 2px 0 0 0; 
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        body.mom-theme .app-title {
+            background: linear-gradient(135deg, var(--mom-mode), var(--accent));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+
+        /* 頂部即時地圖視窗 */
+        .map-wrapper {
+            position: relative;
+            width: calc(100% - 20px);
+            height: 150px;
+            margin: 4px 10px 8px;
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1), 0 4px 12px rgba(0,0,0,0.08);
+            background: #E5E5EA;
+        }
+
+        #realtime-map { width: 100%; height: 100%; z-index: 1; }
+
+        .locate-me-btn {
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            z-index: 500;
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(0,0,0,0.15);
+            border-radius: 8px;
+            padding: 5px 10px;
+            font-size: 11px;
+            font-weight: 800;
+            color: var(--primary);
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+            display: flex; align-items: center; gap: 4px;
+        }
+
+        /* 模式切換 Control Bar */
+        .mode-switch-bar {
+            margin: 0 10px 6px;
+            display: flex; gap: 6px;
+            background: rgba(0, 0, 0, 0.05);
+            padding: 3px; border-radius: 12px;
+        }
+        .mode-btn {
+            flex: 1; padding: 7px 4px; border: none; border-radius: 9px;
+            font-size: 11px; font-weight: 800; color: var(--text-muted); background: transparent;
+            cursor: pointer; transition: all 0.3s;
+            display: flex; align-items: center; justify-content: center; gap: 4px;
+        }
+        .mode-btn.active-main { background: #FFF; color: var(--primary); box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+        .mode-btn.active-mom { background: var(--mom-mode); color: #FFF; box-shadow: 0 3px 10px rgba(255, 45, 85, 0.3); }
+
+        /* 天數導航列 */
+        .day-nav {
+            display: flex; justify-content: space-between;
+            margin: 0 10px 8px; 
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 12px; padding: 3px; 
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            overflow-x: auto; scrollbar-width: none;
+        }
+        .day-nav::-webkit-scrollbar { display: none; }
+
+        .day-nav button {
+            flex: 1; min-width: 38px; border: none; background: none; padding: 6px 0;
+            font-weight: 700; color: var(--text-muted); font-size: 11px;
+            transition: all 0.25s; border-radius: 8px; cursor: pointer; text-align: center;
+        }
+
+        .day-nav button.active { color: #FFFFFF; background: var(--primary); box-shadow: 0 2px 8px rgba(10, 132, 255, 0.3); }
+        body.mom-theme .day-nav button.active { background: var(--mom-mode); box-shadow: 0 2px 8px rgba(255, 45, 85, 0.3); }
+
+        /* =========================================
+           3. 快捷工具列
+           ========================================= */
+        .tool-bar { display: grid; grid-template-columns: repeat(3, 1fr); padding: 10px 10px 6px; gap: 8px; }
+        .tool-btn {
+            padding: 9px 4px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.6);
+            background: rgba(255, 255, 255, 0.75); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02); font-size: 11px; font-weight: 700; display: flex; 
+            flex-direction: column; align-items: center; justify-content: center; gap: 3px; cursor: pointer;
+        }
+        .tool-btn:active { transform: scale(0.95); }
+
+        /* 雙地圖按鈕組 */
+        .map-btn-group { display: flex; gap: 6px; margin-top: 6px; }
+        .map-btn {
+            flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 3px;
+            border: none; padding: 6px 8px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer;
+        }
+        .map-btn.google { background: rgba(10, 132, 255, 0.1); color: var(--primary); }
+        .map-btn.naver { background: rgba(3, 207, 93, 0.12); color: #009933; }
+
+        /* =========================================
+           4. 行程時間軸 & 卡片
+           ========================================= */
+        .day-main-title { padding: 0 18px; margin: 8px 0 4px; font-size: 16px; font-weight: 800; color: var(--text-dark); }
+        .timeline-container { padding: 8px 12px 30px; position: relative; }
+        .timeline-line { position: absolute; left: 25px; top: 12px; bottom: 0; width: 2px; background: var(--timeline-line); z-index: 1; }
+        .timeline-node { position: relative; padding-left: 40px; margin-bottom: 18px; z-index: 2; scroll-margin-top: 310px; }
+        
+        .fade-slide-in { animation: appleSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes appleSlideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .node-dot { 
+            position: absolute; left: 8px; top: 5px; width: 12px; height: 12px; background: #FFFFFF; 
+            border: 3px solid var(--primary); border-radius: 50%; box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.15); 
+        }
+        body.mom-theme .node-dot { border-color: var(--mom-mode); box-shadow: 0 0 0 3px rgba(255, 45, 85, 0.15); }
+
+        .node-time { font-size: 12px; font-weight: 800; color: var(--primary); margin-bottom: 4px; display: flex; align-items: center; gap: 4px; }
+        body.mom-theme .node-time { color: var(--mom-mode); }
+
+        .card { 
+            background: var(--card); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            border-radius: 15px; padding: 14px; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.03); border: 1px solid rgba(255, 255, 255, 0.6); 
+        }
+        
+        .guide-box { background: rgba(255, 149, 0, 0.06); border-left: 3.5px solid var(--accent); padding: 8px 10px; font-size: 12px; line-height: 1.5; margin: 6px 0; border-radius: 6px; }
+        .mom-guide-box { background: rgba(255, 45, 85, 0.06); border-left: 3.5px solid var(--mom-mode); padding: 8px 10px; font-size: 12px; line-height: 1.5; margin: 6px 0; border-radius: 6px; }
+
+        .home-card {
+            background: linear-gradient(135deg, rgba(10, 132, 255, 0.08), rgba(48, 176, 199, 0.08)) !important;
+            border: 1.5px solid rgba(10, 132, 255, 0.3) !important;
+        }
+        body.mom-theme .home-card {
+            background: linear-gradient(135deg, rgba(255, 45, 85, 0.08), rgba(255, 149, 0, 0.08)) !important;
+            border-color: rgba(255, 45, 85, 0.3) !important;
+        }
+
+        .dining-wrap { display: flex; overflow-x: auto; gap: 8px; padding: 4px 0; scroll-snap-type: x mandatory; scrollbar-width: none; }
+        .dining-wrap::-webkit-scrollbar { display: none; }
+        .dining-card { flex: 0 0 88%; background: var(--card); border-radius: 14px; padding: 12px; border: 1px solid rgba(255,255,255,0.6); scroll-snap-align: start; }
+        .primary-choice { background: rgba(255, 253, 240, 0.95) !important; border: 1.5px solid rgba(255, 149, 0, 0.4) !important; }
+        .primary-tag { background: var(--accent); color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 800; margin-bottom: 4px; display: inline-block; }
+        .backup-tag { background: #8E8E93; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 800; margin-bottom: 4px; display: inline-block; }
+
+        /* Modals & Toast */
+        .modal { 
+            position: fixed; inset: 0; top: 40px; background: rgba(255, 255, 255, 0.96); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
+            z-index: 2000; display: none; padding: 30px 16px 50px; overflow-y: auto; border-top-left-radius: 20px; border-top-right-radius: 20px;
+            box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.12); transform: translateY(100%); transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .modal.active { display: block; transform: translateY(0); }
+        .modal-handle { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 32px; height: 4px; background: rgba(0, 0, 0, 0.15); border-radius: 2px; }
+        .close-x { position: fixed; top: 50px; right: 18px; font-size: 16px; font-weight: 600; cursor: pointer; color: var(--text-muted); background: rgba(0,0,0,0.05); width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 2001; }
+        
+        #toast { 
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.85); color: white; padding: 8px 20px; border-radius: 18px; font-size: 12px; font-weight: 600; display: none; z-index: 3000;
+        }
+        #toast.show { display: block; }
+
+        .info-table { width: 100%; border-collapse: collapse; font-size: 11px; margin: 8px 0; }
+        .info-table th, .info-table td { border: 1px solid rgba(0,0,0,0.08); padding: 6px; text-align: left; }
+        .info-table th { background: rgba(10, 132, 255, 0.05); color: var(--primary); }
+    </style>
+</head>
+<body>
+
+    <!-- 頂部固定 Header 容器 (包含固定即時地圖) -->
+    <div class="sticky-header-wrapper">
+        <div class="mac-window">
+            <div class="mac-dots">
+                <span class="mac-dot red"></span>
+                <span class="mac-dot yellow"></span>
+                <span class="mac-dot green"></span>
+            </div>
+            <div class="mac-address-bar">busan-family-2026.app</div>
+            <h1 class="app-title" id="appMainHeader">BUSAN TRAVEL</h1>
+        </div>
+
+        <!-- 頂部即時地圖視窗 -->
+        <div class="map-wrapper">
+            <div id="realtime-map"></div>
+            <button class="locate-me-btn" onclick="locateUser()">📍 我的位置</button>
+        </div>
+
+        <!-- 模式切換按鈕區 -->
+        <div class="mode-switch-bar">
+            <button id="btnMainMode" class="mode-btn active-main" onclick="switchTripMode('main')">👨‍👩‍👧‍👦 大部隊模式 (10/31起)</button>
+            <button id="btnMomMode" class="mode-btn" onclick="switchTripMode('mom')">👩‍👦 HaoChun帶娃模式 (11/01起)</button>
+        </div>
+
+        <!-- Segmented 天數選單 -->
+        <div class="day-nav" id="dayNav">
+            <button onclick="render(1)" class="active">D1</button>
+            <button onclick="render(2)">D2</button>
+            <button onclick="render(3)">D3</button>
+            <button onclick="render(4)">D4</button>
+            <button onclick="render(5)">D5</button>
+            <button onclick="render(6)">D6</button>
+            <button onclick="render(7)">D7</button>
+            <button onclick="render(8)">D8</button>
+        </div>
+    </div>
+
+    <!-- 快捷功能選單 -->
+    <div class="tool-bar">
+        <button class="tool-btn" onclick="showModal('care')">👶 育兒必看</button>
+        <button class="tool-btn" onclick="showModal('housing')" style="background:rgba(10,132,255,0.08); color:var(--primary);">🏡 兩大民宿導航</button>
+        <button class="tool-btn" onclick="showModal('momGuide')" style="background:rgba(255, 45, 85, 0.06); border:1px solid rgba(255, 45, 85, 0.2); color:var(--mom-mode);">👩‍👦 獨家出關會合</button>	
+        <button class="tool-btn" onclick="showModal('food')" style="background:rgba(255, 149, 0, 0.05); border:1px solid rgba(255,149,0,0.15);">🍱 全行程美食地圖</button>
+        <button class="tool-btn" onclick="showModal('entry')" style="background:rgba(52, 199, 89, 0.05); border:1px solid rgba(52,199,89,0.15);">📄 機票航班</button>
+        <button class="tool-btn" onclick="showModal('sos')" style="color:#FF3B30">🆘 救急韓文/SOS</button>
+    </div>
+
+    <div id="dayTitleContainer"></div>
+    <div class="timeline-container">
+        <div class="timeline-line"></div>
+        <div id="timelineContent"></div>
+    </div>
+
+    <!-- Modals -->
+    <div id="care-modal" class="modal">
+        <div class="modal-handle"></div>
+        <span class="close-x" onclick="hideModal('care')">✕</span>
+        <h2 style="color:var(--text-dark); margin-bottom: 12px; font-weight: 800; font-size:15px;">👶 育兒友善與嬰兒票注意事項</h2>
+        <div class="mom-guide-box">
+            <strong>🚨 嬰兒票（MuTong）綁定轉移事項：</strong><br>
+            • 因 HaoChun 延後至 11/01 出發，韓國與華航規定 2 歲以下嬰兒不可單獨搭機[cite: 2]。<br>
+            • <b>若 10/31 爸爸帶 MuTong 出發</b>：須提前聯繫華航將嬰兒票登記轉移至爸爸名下[cite: 2]。<br>
+            • <b>若 11/01 媽媽帶 MuTong 出發</b>：MuTong 與 HaoChun 搭乘同班機（11/01 CI188），票種繼續綁定即可[cite: 2]。
+        </div>
+        <div class="guide-box">
+            <strong>🍼 幼兒用餐與推車備忘</strong><br>
+            • 豬肉湯飯：湯頭清淡濃郁不辣，去骨肉片切碎泡飯，1歲與4歲小孩皆極度適合[cite: 2]。<br>
+            • 託運推車：隨行託運嬰兒推車，可在桃園與金海機場一路推至登機門口辦理機艙口託運[cite: 2]。
+        </div>
+    </div>
+
+    <div id="housing-modal" class="modal">
+        <div class="modal-handle"></div>
+        <span class="close-x" onclick="hideModal('housing')">✕</span>
+        <h2 style="color:var(--primary); margin-bottom: 12px; font-weight: 800; font-size:15px;">🏡 兩大 Airbnb 住宿重點與導航</h2>
+        
+        <div class="card" style="margin-bottom: 12px; border-left: 4px solid var(--primary);">
+            <strong style="color:var(--primary); font-size:14px;">🏠 D1-D5 海雲台 Dal-An Stay (前半段 5 晚)</strong>[cite: 2, 13]
+            <p style="font-size:11px; color:#555; margin:4px 0; line-height:1.4;">
+                • <b>格局設施</b>：4 間臥室、7 張床、2 間浴室（可容納至 14 人）[cite: 2, 13]。<br>
+                • <b>極佳位置</b>：海雲台傳統市場內，下樓即古南路商圈與海灘[cite: 2, 13]！<br>
+                • <b>入住方式</b>：採自助密碼鎖入住[cite: 2, 13]，提供免費行李寄存[cite: 2, 13]。<br>
+                • <b>特別提醒</b>：<b>位於 2-3 樓且需要爬樓梯</b>[cite: 2, 13]，搬運大行李與推車請多留意[cite: 2, 13]。
+            </p>
+            <div class="mom-guide-box" onclick="copy('해운대구 군남로41번길 11')">
+                🚕 <b>給計程車司機看 (點擊複製韓文地址)：</b><br>
+                "해운대구 군남로41번길 11로 가주세요."[cite: 2, 13]
+            </div>
+            <div class="map-btn-group">
+                <button class="map-btn google" onclick="openGoogleMap('11 Gunam-ro 41beon-gil, Haeundae, Busan')">🗺️ Google Maps</button>
+                <button class="map-btn naver" onclick="openNaverMap('해운대구 군남로41번길 11')">🧭 Naver 一鍵回民宿</button>
+            </div>
+        </div>
+
+        <div class="card" style="margin-bottom: 12px; border-left: 4px solid var(--primary-light);">
+            <strong style="color:var(--primary-light); font-size:14px;">🏠 D6-D7 西面 Angel Stay (後半段 2 晚)</strong>[cite: 2]
+            <p style="font-size:11px; color:#555; margin:4px 0; line-height:1.4;">
+                • <b>格局設施</b>：整層獨棟、戶外專屬露臺、3 張雙人床[cite: 2]。<br>
+                • <b>極佳位置</b>：田浦咖啡廳街旁邊，距離田浦站 1 分鐘、西面站 3 分鐘[cite: 2]。<br>
+                • <b>入住方式</b>：密碼鎖入住，提供免費行李寄存[cite: 2]。
+            </p>
+            <div class="mom-guide-box" onclick="copy('부산진구 동천로132번길 10')">
+                🚕 <b>給計程車司機看 (點擊複製韓文地址)：</b><br>
+                "부산진구 동천로132번길 10으로 가주세요."[cite: 2]
+            </div>
+            <div class="map-btn-group">
+                <button class="map-btn google" onclick="openGoogleMap('10 Dongcheon-ro 132beon-gil, Busanjin-gu, Busan')">🗺️ Google Maps</button>
+                <button class="map-btn naver" onclick="openNaverMap('부산진구 동천로132번길 10')">🧭 Naver 一鍵回民宿</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="momGuide-modal" class="modal">
+        <div class="modal-handle"></div>
+        <span class="close-x" onclick="hideModal('momGuide')">✕</span>
+        <h2 style="color:var(--mom-mode); margin-bottom: 12px; font-weight: 800; font-size:15px;">👩‍👦 媽媽帶一歲娃獨自出發與會合攻略</h2>
+        <div class="mom-guide-box">
+            <strong>🛫 1. 桃園機場登機前 (11/01 清晨)</strong><br>
+            • <b>機艙口託運推車</b>：辦理 Check-in 時告知櫃檯「推車要用到登機門」，可一路推至登機門[cite: 2]。
+        </div>
+        <div class="mom-guide-box">
+            <strong>🛬 2. 釜山金海機場出關 (11/01 10:50 抵達)</strong><br>
+            • <b>走出空橋領推車</b>：下飛機第一時間在空橋出口向地勤領取推車[cite: 2]。<br>
+            • <b>優先通關</b>：帶 1 歲幼兒過韓國海關走 Priority 通道[cite: 2]。
+        </div>
+        <div class="mom-guide-box">
+            <strong>🚕 3. 直達會合點或海雲台房源</strong><br>
+            • 出 GATE 3 過馬路至計程車處搭乘 Jumbo Taxi[cite: 2]。<br>
+            • <b>會合方案 A (直達白淺灘)</b>：`영도 흰여울문화마을로 가주세요.`[cite: 2]<br>
+            • <b>會合方案 B (回房源)</b>：`해운대구 군남로41번길 11로 가주세요.`[cite: 2, 13]
+        </div>
+    </div>
+
+    <div id="food-modal" class="modal">
+        <div class="modal-handle"></div>
+        <span class="close-x" onclick="hideModal('food')">✕</span>
+        <h2 style="color:#D35400; font-weight: 800; font-size:15px;">🍱 釜山 8 天 7 夜精選美食大清單</h2>
+        <div id="foodListContainer"></div>
+    </div>
+
+    <div id="entry-modal" class="modal">
+        <div class="modal-handle"></div>
+        <span class="close-x" onclick="hideModal('entry')">✕</span>
+        <h2 style="margin-bottom: 12px; font-weight:800; font-size:15px;">✈️ 航班與人員異動摘要</h2>
+        <table class="info-table">
+            <tr><th>大部隊去程</th><td>10/31 (六) 中華航空 CI188 (07:40 T1 ➔ 10:50 金海 I)[cite: 2, 14]</td></tr>
+            <tr><th>媽媽+MuTong去程</th><td>11/01 (日) 中華航空 CI188 (07:40 T1 ➔ 10:50 金海 I)[cite: 2, 14]</td></tr>
+            <tr><th>全員回程</th><td>11/07 (六) 中華航空 CI189 (11:50 金海 I ➔ 13:30 T1)[cite: 2, 14]</td></tr>
+            <tr><th>隨行車輛</th><td>託運 1 輛嬰兒推車（機艙口託運）[cite: 2]</td></tr>
+        </table>
+    </div>
+
+    <div id="sos-modal" class="modal">
+        <div class="modal-handle"></div>
+        <span class="close-x" onclick="hideModal('sos')">✕</span>
+        <h2 style="color:#FF3B30; margin-bottom: 12px; font-weight: 800; font-size:15px;">🆘 救急韓文與計程車字卡 (點擊複製)</h2>
+        <div class="card" style="margin-bottom:8px; border-left: 4px solid var(--mom-mode);" onclick="copy('영도 흰여울문화마을로 가주세요.')">
+            <strong>🚕 給計程車司機：去白淺灘文化村會合</strong>
+            <p style="font-size:11px; margin:2px 0;">영도 흰여울문화마을로 가주세요. 📋</p>
+        </div>
+        <div class="card" style="margin-bottom:8px; border-left: 4px solid var(--primary);" onclick="copy('해운대구 군남로41번길 11로 가주세요.')">
+            <strong>🚕 給計程車司機：去海雲台 Dal-An 房源</strong>
+            <p style="font-size:11px; margin:2px 0;">해운대구 군남로41번길 11로 가주세요. 📋[cite: 2, 13]</p>
+        </div>
+        <div class="card" style="margin-bottom:8px; border-left: 4px solid var(--accent);" onclick="copy('트렁크에 유모차를 실어도 될까요?')">
+            <strong>🛺 詢問司機：後車廂可以放嬰兒推車嗎？</strong>
+            <p style="font-size:11px; margin:2px 0;">트렁크에 유모차를 실어도 될까요? 📋</p>
+        </div>
+        <div class="card" onclick="copy('1330')">
+            <strong>📞 韓國旅遊觀光諮詢熱線 (24hr 中文翻譯)</strong>
+            <p style="font-size:11px; margin:2px 0;">直撥 1330 (中文翻譯與緊急諮詢)</p>
+        </div>
+    </div>
+
+    <div id="toast">已複製到剪貼簿 📋</div>
+
+    <script>
+        let currentMode = 'main'; 
+        let currentDay = 1;
+        let map = null, userMarker = null, userCircle = null;
+        let mapMarkers = [];
+
+        // 民宿收尾節點數據
+        const HOME_DALAN = {
+            title: "🏠 返回海雲台 Dal-An 房源休息",
+            time: "19:30 ~",
+            guide: "<b>【行程收尾】</b>結束充實行程，搭計程車返回 Dal-An 房源[cite: 2, 13]。讓幼兒早點洗沐休息[cite: 2]。",
+            addr: "11 Gunam-ro 41beon-gil, Haeundae, Busan",
+            koreanAddr: "해운대구 군남로41번길 11",
+            lat: 35.1612, lng: 129.1595,
+            isHome: true
+        };
+
+        const HOME_ANGEL = {
+            title: "🏠 返回西面 Angel 房源休息",
+            time: "19:30 ~",
+            guide: "<b>【行程收尾】</b>返回西面 Angel 房源[cite: 2]。整理戰利品並在獨立露臺放鬆[cite: 2]。",
+            addr: "10 Dongcheon-ro 132beon-gil, Busanjin-gu, Busan",
+            koreanAddr: "부산진구 동천로132번길 10",
+            lat: 35.1585, lng: 129.0632,
+            isHome: true
+        };
+
+        const foodListData = [
+            { name: "尚國家飯捲 (상국이네)", info: "海雲台傳統市場入口名店，不辣飯捲搭溫和魚糕高湯[cite: 2]。", dish: "招牌飯捲 / 海鮮魚糕湯", addr: "상국이네", koreanAddr: "상국이네", lat: 35.1615, lng: 129.1601 },
+            { name: "古來思魚糕 (海雲台店)", info: "多種現做爆漿魚糕、熱起司棒與溫和高湯魚糕麵[cite: 2]。", dish: "起司魚糕 / 溫和魚糕麵", addr: "고래사어묵 해운대점", koreanAddr: "고래사어묵 해운대점", lat: 35.1610, lng: 129.1588 },
+            { name: "密陽血腸豬肉湯飯", info: "湯頭濃郁清甜不辣，肉質極嫩無骨，幼兒泡飯首選[cite: 2]。", dish: "豬肉湯飯", addr: "밀양순대돼지국밥 해운대점", koreanAddr: "밀양순대돼지국밥 해운대점", lat: 35.1605, lng: 129.1590 },
+            { name: "伍班長烤肉 (오반장)", info: "海雲台超高人氣炭火烤肉，免費附贈邊緣甜美蒸蛋[cite: 2]。", dish: "烤豬五花 / 邊緣蒸蛋", addr: "오반장", koreanAddr: "오반장", lat: 35.1620, lng: 129.1612 },
+            { name: "龍宮海鮮炸醬麵", info: "海東龍宮寺旁，招牌韓式黑醬炸醬麵鹹甜不辣[cite: 2]。", dish: "海鮮炸醬麵 / 糖醋肉", addr: "용궁해물쟁반짜장", koreanAddr: "용궁해물쟁반짜장", lat: 35.1901, lng: 129.2225 },
+            { name: "富平漢陽豬腳", info: "招牌原味豬腳肉質 Q 彈薄切、不油不辣[cite: 2]。", dish: "原味豬腳", addr: "한양족발", koreanAddr: "한양족발", lat: 35.1002, lng: 129.0255 },
+            { name: "松亭三代豬肉湯飯", info: "西面 70 年老字號，大骨高湯香濃順口[cite: 2]。", dish: "豬肉湯飯", addr: "송정3대국밥", koreanAddr: "송정3대국밥", lat: 35.1555, lng: 129.0580 },
+            { name: "味贊王鹽烤肉 (맛찬들)", info: "3.5cm 超厚切豬五花，專人全程桌邊代烤[cite: 2]。", dish: "厚切熟成豬五花", addr: "맛찬들왕소금구이 서면점", koreanAddr: "맛찬들왕소금구이 서면점", lat: 35.1560, lng: 129.0588 }
+        ];
+
+        // 大部隊行程（包含首選/備案美食與一鍵回民宿收尾）
+        const mainTripData = {
+            1: {
+                title: "D1 (10/31 六): 抵達釜山與海雲台慢活散策",
+                nodes: [
+                    { time: "07:40 - 10:50", title: "搭乘華航 CI188 飛抵釜山", guide: "【大部隊啟程】桃園 T1 出發 ➔ 10:50 抵達金海機場 I[cite: 2, 14]。", lat: 35.1795, lng: 128.9382 },
+                    { trans: [{ type: "🚖", text: "<b>預約 Jumbo Taxi 直達海雲台 Dal-An 房源</b>[cite: 2, 13]", addr: "11 Gunam-ro 41beon-gil, Haeundae, Busan", koreanAddr: "해운대구 군남로41번길 11" }] },
+                    { time: "12:30 - 14:00", title: "Dal-An 房源寄行李 ➔ 尚國家飯捲午餐", isDining: true, options: [
+                        { name: "尚國家飯捲 (상국이네)", info: "【首選】樓下傳統市場內！不辣飯捲搭魚糕湯[cite: 2]。", dish: "招牌飯捲 / 魚糕湯", addr: "상국이네", koreanAddr: "상국이네", isPrimary: true, lat: 35.1615, lng: 129.1601 },
+                        { name: "古來思魚糕 (海雲台店)", info: "【備案】古南路現做魚糕與溫和烏龍麵[cite: 2]。", dish: "起司魚糕 / 烏龍麵", addr: "고래사어묵 해운대점", koreanAddr: "고래사어묵 해운대점", isPrimary: false, lat: 35.1610, lng: 129.1588 }
+                    ]},
+                    { time: "15:30 - 17:30", title: "海雲台沙灘 (Haeundae Beach) 放電 🏖️", addr: "Haeundae Beach", koreanAddr: "해운대해수욕장", guide: "【放電】讓孩子在乾淨沙灘踩水玩沙[cite: 2]。", lat: 35.1587, lng: 129.1604 },
+                    { time: "17:30 - 19:30", title: "海雲台傳統市場晚餐 ➔ 返房休息", isDining: true, options: [
+                        { name: "海雲台傳統市場豬肉湯飯", info: "【首選】大骨高湯極適合幼兒泡飯[cite: 2]。", dish: "豬肉湯飯", addr: "海雲台傳統市場", koreanAddr: "해운대시장", isPrimary: true, lat: 35.1614, lng: 129.1600 }
+                    ]},
+                    HOME_DALAN
+                ]
+            },
+            2: {
+                title: "D2 (11/01 日): 白淺灘放電、岩南公園、逆向纜車與南浦洞",
+                nodes: [
+                    { time: "09:00 - 09:40", title: "房源出發 ➔ 白淺灘文化村 🌊", addr: "Huinnyeoul Culture Village", koreanAddr: "흰여울문화마을", guide: "僅在上層平路推車散步、入座海景咖啡廳[cite: 2]。", lat: 35.0786, lng: 129.0445 },
+                    { time: "12:20 - 14:00", title: "岩南公園 ➔ 在地美食街午餐", isDining: true, options: [
+                        { name: "岩南公園在地美食街/烤貝", info: "【首選】提供熱騰騰不辣海鮮麵與蒸蛋[cite: 2]。", dish: "海鮮刀削麵 / 蒸蛋", addr: "Amnam Park", koreanAddr: "암남공원", isPrimary: true, lat: 35.0620, lng: 129.0195 }
+                    ]},
+                    { time: "14:00 - 15:40", title: "松島海上纜車 (逆向: 岩南公園 ➔ 松島灣站) 🌉", addr: "Songdo Skywalk", koreanAddr: "송도구름산책로", guide: "逆向策略完全免排隊登水晶車廂[cite: 2]。", lat: 35.0760, lng: 129.0230 },
+                    { time: "18:30 - 20:00", title: "晚餐：富平豬腳一條街 (漢陽豬腳)", isDining: true, options: [
+                        { name: "漢陽豬腳 (한양족발)", info: "【首選】招牌原味豬腳肉質 Q 彈薄切不油不辣[cite: 2]。", dish: "原味豬腳", addr: "한양족발", koreanAddr: "한양족발", isPrimary: true, lat: 35.1002, lng: 129.0255 }
+                    ]},
+                    HOME_DALAN
+                ]
+            },
+            3: {
+                title: "D3 (11/02 一): 秋日賞楓、世界最大百貨與廣安大橋夜景",
+                nodes: [
+                    { time: "09:00 - 09:40", title: "房源出發 ➔ 釜山兒童大公園 🍁", addr: "Busan Children's Grand Park", koreanAddr: "부산어린이대공원", guide: "全線平坦木棧步道，推車極度友善[cite: 2]。", lat: 35.1825, lng: 129.0410 },
+                    { time: "12:30 - 16:30", title: "新世界百貨 Centum City 店 (午餐 & 9F 恐龍公園) 🦖", isDining: true, options: [
+                        { name: "新世界 Centum City 地下美食街", info: "【首選】設專屬兒童高腳椅與親子用餐區[cite: 2]。", dish: "牛肉湯定食", addr: "Shinsegae Centum City", koreanAddr: "신세계백화점 센텀시티점", isPrimary: true, lat: 35.1689, lng: 129.1297 }
+                    ]},
+                    { time: "16:30 - 18:00", title: "廣安里沙灘步道 (Gwangalli Beach) 🌉", addr: "Gwangalli Beach", koreanAddr: "광안리해수욕장", guide: "沿海濱木棧道散步欣賞廣安大橋夜景[cite: 2]。", lat: 35.1532, lng: 129.1189 },
+                    HOME_DALAN
+                ]
+            },
+            4: {
+                title: "D4 (11/03 二): 古寺巡禮、海景平交道與夕陽天空膠囊列車",
+                nodes: [
+                    { time: "09:30 - 10:00", title: "房源出發 ➔ 海東龍宮寺 ⛩️", addr: "Haedong Yonggungsa Temple", koreanAddr: "해동용궁사", guide: "韓國唯一建於海邊崖壁的古寺[cite: 2]。", lat: 35.1884, lng: 129.2233 },
+                    { time: "12:00 - 13:30", title: "午餐：龍宮海鮮炸醬麵 🍜", isDining: true, options: [
+                        { name: "龍宮海鮮炸醬麵", info: "【首選】韓式黑醬炸醬麵鹹甜不辣，小孩最愛[cite: 2]。", dish: "海鮮炸醬麵 / 糖醋肉", addr: "용궁해물쟁반짜장", koreanAddr: "용궁해물쟁반짜장", isPrimary: true, lat: 35.1901, lng: 129.2225 }
+                    ]},
+                    { time: "15:40 - 16:30", title: "天空膠囊列車 (青沙浦站 ➔ 尾浦站，預約 16:00) 🚃", addr: "Cheongsapo Station", koreanAddr: "청사포역", guide: "黃昏時刻行駛，飽覽金色海面與落日[cite: 2]！", lat: 35.1616, lng: 129.1918 },
+                    { time: "16:30 - 18:30", title: "晚餐：海雲台 伍班長烤肉 🥩", isDining: true, options: [
+                        { name: "伍班長烤肉 (오반장)", info: "【首選】炭火烤肉，烤盤邊免費蒸蛋[cite: 2]！", dish: "烤豬五花 / 蒸蛋", addr: "오반장", koreanAddr: "오반장", isPrimary: true, lat: 35.1620, lng: 129.1612 }
+                    ]},
+                    HOME_DALAN
+                ]
+            },
+            5: {
+                title: "D5 (11/04 三): 親子海洋館、世峰樓步道與 The Bay 101 夜景",
+                nodes: [
+                    { time: "10:00 - 12:00", title: "SEA LIFE 釜山海洋館 🦈", addr: "SEA LIFE Busan Aquarium", koreanAddr: "씨라이프부산아쿠아리움", guide: "觀賞鯊魚餵食秀與觸摸池互動[cite: 2]。", lat: 35.1593, lng: 129.1609 },
+                    { time: "13:30 - 15:30", title: "Busan X the Sky (100樓觀景台) 🏙️", addr: "BUSAN X the SKY", koreanAddr: "부산엑스더스카이", guide: "直達 100 樓俯瞰海岸線[cite: 2]。", lat: 35.1601, lng: 129.1682 },
+                    { time: "17:00 - 18:30", title: "The Bay 101 落日夜景 ➔ 享用點心", addr: "The Bay 101", koreanAddr: "더베이101", guide: "享用現炸無骨魚塊與薯條看摩天大樓夜景[cite: 2]。", lat: 35.1567, lng: 129.1523 },
+                    HOME_DALAN
+                ]
+            },
+            6: {
+                title: "D6 (11/05 四): 跨區大移動、西面樂天百貨與田浦文創散策",
+                nodes: [
+                    { time: "10:30 - 11:30", title: "Dal-An 退房 ➔ 移動至西面 Angel 房源 寄行李", addr: "10 Dongcheon-ro 132beon-gil, Busanjin-gu, Busan", koreanAddr: "부산진구 동천로132번길 10", guide: "搭乘包車前往西面田浦寄行李[cite: 2]。", lat: 35.1585, lng: 129.0632 },
+                    { time: "11:30 - 13:00", title: "午餐：西面松亭三代豬肉湯飯 🍲", isDining: true, options: [
+                        { name: "松亭三代豬肉湯飯", info: "【首選】大骨高湯香濃順口，肉質入口即化[cite: 2]。", dish: "豬肉湯飯", addr: "송정3대국밥", koreanAddr: "송정3대국밥", isPrimary: true, lat: 35.1555, lng: 129.0580 }
+                    ]},
+                    { time: "17:30 - 19:30", title: "晚餐：味贊王鹽烤肉 🥩", isDining: true, options: [
+                        { name: "味贊王鹽烤肉 (맛찬들)", info: "【首選】3.5cm 厚切豬五花，專人桌邊代烤[cite: 2]！", dish: "厚切熟成豬五花", addr: "맛찬들왕소금구이 서면점", koreanAddr: "맛찬들왕소금구이 서면점", isPrimary: true, lat: 35.1560, lng: 129.0588 }
+                    ]},
+                    HOME_ANGEL
+                ]
+            },
+            7: {
+                title: "D7 (11/06 五): 巨濟島自然風光專車一日遊",
+                nodes: [
+                    { time: "08:00 - 10:30", title: "專車接送 ➔ 跨海前往巨濟島 🚌", guide: "搭乘專車，全家可以在車上舒適補眠[cite: 2]。", lat: 34.8806, lng: 128.6211 },
+                    { time: "10:30 - 13:00", title: "搭渡輪遊覽 外島天堂島 (Oedo Botania) 🌺", addr: "Oedo Botania", koreanAddr: "외도 보타니아", guide: "海上歐式植物園步道鋪設完善[cite: 2]。", lat: 34.7963, lng: 128.7042 },
+                    HOME_ANGEL
+                ]
+            },
+            8: {
+                title: "D8 (11/07 六): 收拾戰利品、依依不捨返台 ✈️",
+                nodes: [
+                    { time: "08:00 - 08:40", title: "Angel 退房 ➔ 直達金海國際機場 (I)", addr: "Gimhae International Airport", koreanAddr: "김해국제공항", guide: "搭乘大型計程車直達機場[cite: 2]。", lat: 35.1795, lng: 128.9382 },
+                    { time: "11:50 - 13:30", title: "搭乘華航 CI189 返抵台北 🛫", guide: "11:50 金海起飛 ➔ 13:30 順利返抵台北[cite: 2, 14]！" }
+                ]
+            }
+        };
+
+        // 媽媽獨自帶娃模式行程 (D1 - D3)
+        const momTripData = {
+            1: {
+                title: "D1 (10/31 六): 媽媽參加證照考試 & 家中準備",
+                nodes: [
+                    { time: "全天", title: "參加證照考試 ➔ 考畢返家整理行李 📚", guide: "<b>【媽媽應考日】</b>安心完成考試！爸爸與大部隊已飛抵釜山[cite: 2]。確認明日 11/01 CI188 機票[cite: 2, 14]。" }
+                ]
+            },
+            2: {
+                title: "D2 (11/01 日): 媽媽帶娃獨自飛抵釜山 ➔ 直達會合",
+                nodes: [
+                    { time: "07:40 - 10:50", title: "搭乘 CI188 班機獨自飛往釜山 ✈️", guide: "桃園 T1 出發。推車推至登機門辦理機艙口託運[cite: 2]。", lat: 35.1795, lng: 128.9382 },
+                    { 
+                        time: "10:50 - 11:30", 
+                        title: "金海機場 (PUS) 獨家出關指南 (必看！)", 
+                        guide: `
+                        <div class="mom-guide-box">
+                            <strong>🚨 媽媽帶娃出關 SOP：</strong><br>
+                            1. 空橋口領取推車 ➔ 2. 入境走 Priority 通道 ➔ 3. GATE 3 搭計程車[cite: 2]。
+                        </div>` 
+                    },
+                    { 
+                        time: "11:30 - 12:30", 
+                        title: "一鍵搭乘計程車直達白淺灘會合點 🚕", 
+                        guide: "搭乘 Jumbo Taxi，出示韓文位址[cite: 2]。",
+                        koreanAddr: "영도 흰여울문화마을로 가주세요.",
+                        addr: "Huinnyeoul Culture Village", lat: 35.0786, lng: 129.0445
+                    },
+                    { 
+                        time: "12:30 ~", 
+                        title: "與大部隊感人會合 🤝 ➔ 開啟團圓行程", 
+                        guide: "抵達影島白淺灘，與老公孩子會合享用午餐[cite: 2]！" 
+                    },
+                    HOME_DALAN
+                ]
+            },
+            3: {
+                title: "D3 (11/02 一): 媽媽已回歸大部隊 ➔ 賞楓與百貨",
+                nodes: [
+                    { time: "全天", title: "回歸大部隊共用行程 ❤️", guide: "與大團隊一起走兒童大公園賞楓與 Centum City 百貨行程[cite: 2]。" },
+                    HOME_DALAN
+                ]
+            }
+        };
+
+        // 初始化 Leaflet 地圖 (具備 Try-Catch 防爆保護)
+        function initMap() {
+            try {
+                if (typeof L !== 'undefined') {
+                    map = L.map('realtime-map', { zoomControl: false }).setView([35.1612, 129.1595], 11);
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        maxZoom: 18,
+                        attribution: '© OpenStreetMap'
+                    }).addTo(map);
+                }
+            } catch (e) {
+                console.log("地圖初始化跳過或受阻:", e);
+            }
+        }
+
+        // 更新地圖標註點
+        function updateMapMarkers(dayNodes) {
+            if (!map || typeof L === 'undefined') return;
+            try {
+                mapMarkers.forEach(m => map.removeLayer(m));
+                mapMarkers = [];
+
+                let bounds = [];
+                dayNodes.forEach(node => {
+                    if (node.lat && node.lng) {
+                        const marker = L.marker([node.lat, node.lng]).addTo(map);
+                        marker.bindPopup(`<b>${node.title || node.name}</b>`);
+                        mapMarkers.push(marker);
+                        bounds.push([node.lat, node.lng]);
+                    }
+                    if (node.options) {
+                        node.options.forEach(opt => {
+                            if (opt.lat && opt.lng) {
+                                const marker = L.marker([opt.lat, opt.lng]).addTo(map);
+                                marker.bindPopup(`<b>${opt.name}</b>`);
+                                mapMarkers.push(marker);
+                                bounds.push([opt.lat, opt.lng]);
+                            }
+                        });
+                    }
+                });
+
+                if (bounds.length > 0) {
+                    map.fitBounds(bounds, { padding: [20, 20] });
+                }
+            } catch (e) {
+                console.log("更新地圖標註點錯誤:", e);
+            }
+        }
+
+        // 使用者 GPS 即時定位
+        function locateUser() {
+            if (!navigator.geolocation) {
+                alert("您的裝置不支援 GPS 定位功能");
+                return;
+            }
+            navigator.geolocation.getCurrentPosition(pos => {
+                const lat = pos.coords.latitude;
+                const lng = pos.coords.longitude;
+
+                if (map) {
+                    if (userMarker) map.removeLayer(userMarker);
+                    if (userCircle) map.removeLayer(userCircle);
+
+                    userMarker = L.circleMarker([lat, lng], {
+                        color: '#0A84FF',
+                        fillColor: '#0A84FF',
+                        fillOpacity: 0.9,
+                        radius: 8
+                    }).addTo(map).bindPopup("📍 您目前的位置").openPopup();
+
+                    userCircle = L.circle([lat, lng], {
+                        radius: pos.coords.accuracy,
+                        color: '#0A84FF',
+                        opacity: 0.15
+                    }).addTo(map);
+
+                    map.setView([lat, lng], 14);
+                }
+            }, () => {
+                alert("無法獲取您的位置，請確認定位權限已開啟");
+            });
+        }
+
+        function switchTripMode(mode) {
+            currentMode = mode;
+            document.getElementById('btnMainMode').className = mode === 'main' ? 'mode-btn active-main' : 'mode-btn';
+            document.getElementById('btnMomMode').className = mode === 'mom' ? 'mode-btn active-mom' : 'mode-btn';
+            document.body.className = mode === 'mom' ? 'mom-theme' : '';
+            document.getElementById('appMainHeader').innerText = mode === 'mom' ? "MOM'S SOLO ARRIVAL" : "BUSAN TRAVEL";
+
+            render(currentDay);
+        }
+
+        function render(day) {
+            currentDay = day;
+            const btns = document.querySelectorAll('.day-nav button');
+            btns.forEach((b, i) => b.className = (i + 1 === day ? 'active' : ''));
+
+            let activeData;
+            if (day <= 3) {
+                activeData = (currentMode === 'mom') ? momTripData[day] : mainTripData[day];
+            } else {
+                activeData = mainTripData[day];
+            }
+
+            const titleContainer = document.getElementById('dayTitleContainer');
+            titleContainer.innerHTML = `<h2 class="day-main-title">${activeData.title}</h2>`;
+
+            const container = document.getElementById('timelineContent');
+            let html = ``;
+            
+            activeData.nodes.forEach(n => {
+                if (n.trans) {
+                    html += `<div class="timeline-node">
+                        <div class="trans-card">
+                            ${n.trans.map(t => `
+                                <div style="font-size:12px; color:#333;">
+                                    ${t.type}${t.text}
+                                    <div class="map-btn-group">
+                                        <button class="map-btn google" onclick="openGoogleMap('${t.addr}')">🗺️ Google</button>
+                                        <button class="map-btn naver" onclick="openNaverMap('${t.koreanAddr || t.addr}')">🧭 Naver Map</button>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>`;
+                } else if (n.isDining) {
+                    html += `
+                    <div class="timeline-node">
+                        <div class="node-dot" style="border-color:var(--accent);"></div>
+                        <span class="node-time">🍴 美食方案 (${n.time || '用餐'})</span>
+                        <div class="dining-wrap">
+                            ${n.options.map(o => `
+                                <div class="dining-card ${o.isPrimary ? 'primary-choice' : ''}">
+                                    ${o.isPrimary ? '<div class="primary-tag">★ 推薦首選</div>' : '<div class="backup-tag">備案選擇</div>'}
+                                    <strong style="font-size:13px; display:block; margin-bottom:2px;">${o.name}</strong>
+                                    <small style="color:var(--accent); font-weight:700; display:block; margin-bottom:3px;">🍲 招牌: ${o.dish}</small>
+                                    <small style="color:#555; display:block;">${o.info}</small>
+                                    <div class="map-btn-group">
+                                        <button class="map-btn google" onclick="openGoogleMap('${o.addr || o.name}')">🗺️ Google</button>
+                                        <button class="map-btn naver" onclick="openNaverMap('${o.koreanAddr || o.addr || o.name}')">🧭 Naver Map</button>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>`;
+                } else {
+                    html += `
+                    <div class="timeline-node">
+                        <div class="node-dot"></div>
+                        <span class="node-time">${n.time}</span>
+                        <div class="card ${n.isHome ? 'home-card' : ''}">
+                            <div style="font-weight:bold; font-size:14px;">${n.title}</div>
+                            ${n.guide ? `<div class="guide-box">${n.guide}</div>` : ''}
+                            ${n.koreanAddr ? `
+                                <div class="mom-guide-box" onclick="copy('${n.koreanAddr}')">
+                                    🚕 <b>給計程車司機看 (點擊複製)：</b><br>
+                                    "${n.koreanAddr}"
+                                </div>
+                            ` : ''}
+                            ${(n.addr || n.koreanAddr) ? `
+                                <div class="map-btn-group">
+                                    <button class="map-btn google" onclick="openGoogleMap('${n.addr || n.title}')">🗺️ Google Maps</button>
+                                    <button class="map-btn naver" onclick="openNaverMap('${n.koreanAddr || n.addr || n.title}')">🧭 Naver ${n.isHome ? '一鍵回民宿' : 'Map'}</button>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>`;
+                }
+            });
+
+            container.innerHTML = html;
+            container.classList.remove('fade-slide-in');
+            void container.offsetWidth;
+            container.classList.add('fade-slide-in');
+
+            updateMapMarkers(activeData.nodes);
+        }
+
+        // 開啟時自動根據手機當前時間跳轉
+        function autoJumpToCurrentTime() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = now.getMonth() + 1;
+            const date = now.getDate();
+
+            if (year === 2026 && month === 10 && date === 31) render(1);
+            else if (year === 2026 && month === 11 && date === 1) render(2);
+            else if (year === 2026 && month === 11 && date === 2) render(3);
+            else if (year === 2026 && month === 11 && date === 3) render(4);
+            else if (year === 2026 && month === 11 && date === 4) render(5);
+            else if (year === 2026 && month === 11 && date === 5) render(6);
+            else if (year === 2026 && month === 11 && date === 6) render(7);
+            else if (year === 2026 && month === 11 && date === 7) render(8);
+            else render(1);
+        }
+
+        function openGoogleMap(query) {
+            if (!query) return;
+            window.open("https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(query), '_blank');
+        }
+
+        function openNaverMap(query) {
+            if (!query) return;
+            const encodedQuery = encodeURIComponent(query);
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+            if (isIOS) {
+                const appUrl = `nmap://search?query=${encodedQuery}&appname=busan-family-2026.app`;
+                const webUrl = `https://m.map.naver.com/search2/search.naver?query=${encodedQuery}`;
+                const start = Date.now();
+                window.location.href = appUrl;
+                
+                setTimeout(function() {
+                    if (Date.now() - start < 2000) {
+                        window.open(webUrl, '_blank');
+                    }
+                }, 1500);
+            } else {
+                window.open(`https://m.map.naver.com/search2/search.naver?query=${encodedQuery}`, '_blank');
+            }
+        }
+
+        function copy(t) {
+            if (!t) return;
+            navigator.clipboard.writeText(t);
+            const toast = document.getElementById('toast');
+            toast.className = "show";
+            setTimeout(() => toast.className = "", 2000);
+        }
+
+        function showModal(id) {
+            if (id === 'food') updateFoodModal();
+            const modal = document.getElementById(id + '-modal');
+            modal.style.display = 'block';
+            setTimeout(() => modal.classList.add('active'), 10);
+        }
+
+        function hideModal(id) { 
+            const modal = document.getElementById(id + '-modal');
+            modal.classList.remove('active');
+            setTimeout(() => modal.style.display = 'none', 350);
+        }
+
+        function updateFoodModal() {
+            const container = document.getElementById('foodListContainer');
+            container.innerHTML = foodListData.map(r => `
+                <div class="card" style="margin-bottom: 10px; border-left:3.5px solid var(--primary-light);">
+                    <strong style="font-size:14px; display:block;">${r.name}</strong>
+                    <small style="color:var(--accent); font-weight:700; display:block; margin:2px 0;">🍲 招牌菜色: ${r.dish}</small>
+                    <small style="color:var(--text-muted); display:block; margin-bottom:4px;">${r.info}</small>
+                    <div class="map-btn-group">
+                        <button class="map-btn google" onclick="openGoogleMap('${r.addr || r.name}')">🗺️ Google</button>
+                        <button class="map-btn naver" onclick="openNaverMap('${r.koreanAddr || r.addr || r.name}')">🧭 Naver Map</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 頁面載入安全執行
+        window.addEventListener('DOMContentLoaded', function() {
+            initMap();
+            switchTripMode('main');
+            autoJumpToCurrentTime();
+        });
+    </script>
+</body>
+</html>
