@@ -5,12 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>2026 釜山親子自由行導航助理 V17.0 (穩定修復版)</title>
-    
-    <!-- Leaflet.js 地圖庫 -->
+    <title>2026 釜山親子 slow travel 導航助理 </title>
+    <!-- Leaflet.js 地圖庫 (解決 L undefined 問題) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
     <style>
         /* =========================================
            1. 顏色變數與 Apple 視覺重置 (macOS Sequoia 風格)
@@ -20,10 +18,10 @@
             --primary-light: #30B0C7;   /* 釜山海洋青 */
             --secondary: #34C759;       /* 蘋果綠 */
             --accent: #FF9500;          /* 溫暖橘 */
-            --mom-mode: #FF2D55;        /* 媽媽專屬桃紅 */
-            --naver: #03CF5D;           /* Naver 專屬綠 */
+            --transit: #147EFB;         /* 大眾運輸藍 */
+            --taxi: #FFCC00;            /* 警告/計程車黃 */
             --bg: #F2F2F7;              /* iOS 淺灰背景 */
-            --card: rgba(255, 255, 255, 0.9); /* 磨砂玻璃卡片背景 */
+            --card: rgba(255, 255, 255, 0.75); /* 磨砂玻璃卡片背景 */
             --timeline-line: rgba(10, 132, 255, 0.2);
             --text-dark: #1D1D1F;       /* 蘋果深黑 */
             --text-muted: #86868B;      /* 蘋果灰 */
@@ -47,252 +45,517 @@
             -webkit-font-smoothing: antialiased;
         }
 
-        body.mom-theme {
-            background-image: radial-gradient(at 0% 0%, rgba(255, 45, 85, 0.15) 0, transparent 50%),
-                              radial-gradient(at 100% 100%, rgba(255, 149, 0, 0.1) 0, transparent 50%);
-            --timeline-line: rgba(255, 45, 85, 0.25);
-        }
-
         /* =========================================
-           2. macOS 頂部固定 Header & 靜態即時地圖容器
+           2. macOS 頂部視窗控制區與標題 (macOS Header)
            ========================================= */
-        .sticky-header-wrapper {
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            background: rgba(255, 255, 255, 0.92);
-            backdrop-filter: blur(25px) saturate(190%);
-            -webkit-backdrop-filter: blur(25px) saturate(190%);
-            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
-        }
-
         .mac-window {
-            padding: 38px 15px 8px;
+            background: rgba(255, 255, 255, 0.55);
+            backdrop-filter: blur(20px) saturate(190%);
+            -webkit-backdrop-filter: blur(20px) saturate(190%);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 55px 20px 25px;
             text-align: center;
+            border-bottom-left-radius: 30px; 
+            border-bottom-right-radius: 30px;
             position: relative;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
         }
 
-        .mac-dots { position: absolute; top: 12px; left: 15px; display: flex; gap: 6px; }
-        .mac-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+        .mac-dots {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .mac-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
         .mac-dot.red { background: #FF5F56; }
         .mac-dot.yellow { background: #FFBD2E; }
         .mac-dot.green { background: #27C93F; }
 
         .mac-address-bar {
-            position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.05); border-radius: 6px; padding: 2px 12px; font-size: 10px; color: var(--text-muted); font-weight: 600;
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.6);
+            border: 0.5px solid rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            padding: 4px 20px;
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            pointer-events: none;
+            display: inline-block;
         }
 
         .app-title { 
-            font-size: 20px; font-weight: 800; letter-spacing: -0.5px; margin: 2px 0 0 0; 
+            font-size: 26px; 
+            font-weight: 800; 
+            letter-spacing: -0.5px; 
+            margin: 10px 0 0 0; 
             background: linear-gradient(135deg, var(--primary), var(--primary-light));
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-        }
-        body.mom-theme .app-title {
-            background: linear-gradient(135deg, var(--mom-mode), var(--accent));
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-        }
-
-        /* 頂部即時地圖視窗 */
-        .map-wrapper {
-            position: relative;
-            width: calc(100% - 20px);
-            height: 150px;
-            margin: 4px 10px 8px;
-            border-radius: 14px;
-            overflow: hidden;
-            box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1), 0 4px 12px rgba(0,0,0,0.08);
-            background: #E5E5EA;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        } 
+        
+        .app-subtitle { 
+            font-size: 12px; 
+            color: var(--text-muted); 
+            margin-top: 6px; 
+            display: block; 
+            font-weight: 600;
         }
 
-        #realtime-map { width: 100%; height: 100%; z-index: 1; }
-
-        .locate-me-btn {
-            position: absolute;
-            bottom: 8px;
-            right: 8px;
-            z-index: 500;
-            background: rgba(255, 255, 255, 0.95);
-            border: 1px solid rgba(0,0,0,0.15);
-            border-radius: 8px;
-            padding: 5px 10px;
-            font-size: 11px;
-            font-weight: 800;
-            color: var(--primary);
-            cursor: pointer;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-            display: flex; align-items: center; gap: 4px;
+        /* Mode Switcher Toggle */
+        .mode-toggle-wrap {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin-top: 14px;
         }
 
-        /* 模式切換 Control Bar */
-        .mode-switch-bar {
-            margin: 0 10px 6px;
-            display: flex; gap: 6px;
-            background: rgba(0, 0, 0, 0.05);
-            padding: 3px; border-radius: 12px;
-        }
         .mode-btn {
-            flex: 1; padding: 7px 4px; border: none; border-radius: 9px;
-            font-size: 11px; font-weight: 800; color: var(--text-muted); background: transparent;
-            cursor: pointer; transition: all 0.3s;
-            display: flex; align-items: center; justify-content: center; gap: 4px;
+            border: 1px solid rgba(10, 132, 255, 0.3);
+            background: rgba(255, 255, 255, 0.7);
+            color: var(--primary);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
         }
-        .mode-btn.active-main { background: #FFF; color: var(--primary); box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
-        .mode-btn.active-mom { background: var(--mom-mode); color: #FFF; box-shadow: 0 3px 10px rgba(255, 45, 85, 0.3); }
 
-        /* 天數導航列 */
+        .mode-btn.active {
+            background: linear-gradient(135deg, #FF9500, #FF3B30);
+            color: #FFFFFF;
+            border-color: transparent;
+            box-shadow: 0 4px 12px rgba(255, 59, 48, 0.3);
+        }
+
+        /* =========================================
+           3. 天數導航列 (iOS Segmented Control)
+           ========================================= */
         .day-nav {
-            display: flex; justify-content: space-between;
-            margin: 0 10px 8px; 
-            background: rgba(255, 255, 255, 0.8);
-            border-radius: 12px; padding: 3px; 
-            border: 1px solid rgba(0, 0, 0, 0.05);
-            overflow-x: auto; scrollbar-width: none;
+            display: flex; 
+            justify-content: space-between;
+            margin: -20px 10px 15px; 
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(30px) saturate(200%);
+            -webkit-backdrop-filter: blur(30px) saturate(200%);
+            border-radius: 16px;
+            padding: 4px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            position: relative; 
+            z-index: 100;
+            overflow-x: auto;
+            scrollbar-width: none;
         }
         .day-nav::-webkit-scrollbar { display: none; }
 
         .day-nav button {
-            flex: 1; min-width: 38px; border: none; background: none; padding: 6px 0;
-            font-weight: 700; color: var(--text-muted); font-size: 11px;
-            transition: all 0.25s; border-radius: 8px; cursor: pointer; text-align: center;
+            flex: 1; 
+            min-width: 58px;
+            border: none; 
+            background: none; 
+            padding: 10px 2px;
+            font-weight: 700; 
+            color: var(--text-muted); 
+            font-size: 12px;
+            transition: all 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+            border-radius: 12px; 
+            cursor: pointer;
+            text-align: center;
         }
 
-        .day-nav button.active { color: #FFFFFF; background: var(--primary); box-shadow: 0 2px 8px rgba(10, 132, 255, 0.3); }
-        body.mom-theme .day-nav button.active { background: var(--mom-mode); box-shadow: 0 2px 8px rgba(255, 45, 85, 0.3); }
+        .day-nav button.active {
+            color: #FFFFFF; 
+            background: var(--primary);
+            box-shadow: 0 4px 12px rgba(10, 132, 255, 0.3);
+            transform: scale(1.02);
+        }
 
         /* =========================================
-           3. 快捷工具列
+           4. 快捷工具列 (iOS App Grid Layout)
            ========================================= */
-        .tool-bar { display: grid; grid-template-columns: repeat(3, 1fr); padding: 10px 10px 6px; gap: 8px; }
+        .tool-bar { 
+            display: grid; 
+            grid-template-columns: repeat(3, 1fr); 
+            padding: 5px 15px 15px; 
+            gap: 10px; 
+        }
+
         .tool-btn {
-            padding: 9px 4px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.6);
-            background: rgba(255, 255, 255, 0.75); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
-            box-shadow: 0 2px 6px rgba(0,0,0,0.02); font-size: 11px; font-weight: 700; display: flex; 
-            flex-direction: column; align-items: center; justify-content: center; gap: 3px; cursor: pointer;
+            padding: 12px 6px; 
+            border-radius: 16px; 
+            border: 1px solid rgba(255,255,255,0.4);
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            font-size: 12px; 
+            font-weight: 700; 
+            display: flex; 
+            flex-direction: column;
+            align-items: center; 
+            justify-content: center; 
+            gap: 6px;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
-        .tool-btn:active { transform: scale(0.95); }
 
-        /* 雙地圖按鈕組 */
-        .map-btn-group { display: flex; gap: 6px; margin-top: 6px; }
-        .map-btn {
-            flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 3px;
-            border: none; padding: 6px 8px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer;
+        .tool-btn:active {
+            transform: scale(0.94);
+            background: rgba(255, 255, 255, 0.8);
         }
-        .map-btn.google { background: rgba(10, 132, 255, 0.1); color: var(--primary); }
-        .map-btn.naver { background: rgba(3, 207, 93, 0.12); color: #009933; }
+
+        /* 雙系統地圖按鈕組 (Nmap & Google Maps) */
+        .map-btn-group {
+            display: flex;
+            gap: 6px;
+            margin-top: 8px;
+            width: 100%;
+        }
+
+        .map-btn {
+            flex: 1;
+            display: inline-flex; 
+            align-items: center; 
+            justify-content: center;
+            gap: 3px;
+            background: rgba(10, 132, 255, 0.08); 
+            color: var(--primary); 
+            border: none;
+            padding: 8px 6px; 
+            border-radius: 10px; 
+            font-size: 11px; 
+            font-weight: 700; 
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .map-btn.nmap {
+            background: rgba(39, 201, 63, 0.12);
+            color: #03C75A; /* Naver 綠 */
+        }
+
+        .map-btn:active { opacity: 0.7; }
+
+        .price-tag {
+            font-size: 11px; 
+            color: var(--accent); 
+            font-weight: bold; 
+            background: rgba(255, 149, 0, 0.1);
+            padding: 2px 6px; 
+            border-radius: 4px; 
+            margin-left: 5px;
+        }
 
         /* =========================================
-           4. 行程時間軸 & 卡片
+           5. 行程時間軸 (Apple Timeline & Smooth Cards)
            ========================================= */
-        .day-main-title { padding: 0 18px; margin: 8px 0 4px; font-size: 16px; font-weight: 800; color: var(--text-dark); }
-        .timeline-container { padding: 8px 12px 30px; position: relative; }
-        .timeline-line { position: absolute; left: 25px; top: 12px; bottom: 0; width: 2px; background: var(--timeline-line); z-index: 1; }
-        .timeline-node { position: relative; padding-left: 40px; margin-bottom: 18px; z-index: 2; scroll-margin-top: 310px; }
+        .day-main-title { 
+            padding: 0 25px; 
+            margin: 15px 0 5px; 
+            font-size: 20px; 
+            font-weight: 800; 
+            color: var(--text-dark); 
+            line-height: 1.4; 
+            letter-spacing: -0.5px;
+        }
+
+        .timeline-container { 
+            padding: 10px 15px 30px; 
+            position: relative; 
+        }
         
-        .fade-slide-in { animation: appleSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        @keyframes appleSlideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .timeline-line { 
+            position: absolute; 
+            left: 30px; 
+            top: 20px; 
+            bottom: 0; 
+            width: 2px; 
+            background: var(--timeline-line); 
+            z-index: 1; 
+        }
+        
+        .timeline-node { 
+            position: relative; 
+            padding-left: 50px; 
+            margin-bottom: 25px; 
+            z-index: 2; 
+        }
+        
+        .fade-slide-in {
+            animation: appleSlideIn 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes appleSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.98);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
 
         .node-dot { 
-            position: absolute; left: 8px; top: 5px; width: 12px; height: 12px; background: #FFFFFF; 
-            border: 3px solid var(--primary); border-radius: 50%; box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.15); 
+            position: absolute; 
+            left: 10px; 
+            top: 6px; 
+            width: 14px; 
+            height: 14px; 
+            background: #FFFFFF; 
+            border: 3.5px solid var(--primary); 
+            border-radius: 50%; 
+            box-shadow: 0 0 0 4px rgba(10, 132, 255, 0.15); 
         }
-        body.mom-theme .node-dot { border-color: var(--mom-mode); box-shadow: 0 0 0 3px rgba(255, 45, 85, 0.15); }
 
-        .node-time { font-size: 12px; font-weight: 800; color: var(--primary); margin-bottom: 4px; display: flex; align-items: center; gap: 4px; }
-        body.mom-theme .node-time { color: var(--mom-mode); }
+        .node-time { 
+            font-size: 13px; 
+            font-weight: 800; 
+            color: var(--primary); 
+            margin-bottom: 6px; 
+            display: flex; 
+            align-items: center; 
+            gap: 6px; 
+            letter-spacing: 0.5px;
+        }
 
         .card { 
-            background: var(--card); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
-            border-radius: 15px; padding: 14px; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.03); border: 1px solid rgba(255, 255, 255, 0.6); 
+            background: var(--card); 
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-radius: 20px; 
+            padding: 18px; 
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04); 
+            border: 1px solid rgba(255, 255, 255, 0.4); 
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
         
-        .guide-box { background: rgba(255, 149, 0, 0.06); border-left: 3.5px solid var(--accent); padding: 8px 10px; font-size: 12px; line-height: 1.5; margin: 6px 0; border-radius: 6px; }
-        .mom-guide-box { background: rgba(255, 45, 85, 0.06); border-left: 3.5px solid var(--mom-mode); padding: 8px 10px; font-size: 12px; line-height: 1.5; margin: 6px 0; border-radius: 6px; }
-
-        .home-card {
-            background: linear-gradient(135deg, rgba(10, 132, 255, 0.08), rgba(48, 176, 199, 0.08)) !important;
-            border: 1.5px solid rgba(10, 132, 255, 0.3) !important;
+        .guide-box { 
+            background: rgba(255, 149, 0, 0.06); 
+            border-left: 4px solid var(--accent); 
+            padding: 12px 14px; 
+            font-size: 13px; 
+            line-height: 1.6; 
+            margin: 10px 0; 
+            border-radius: 8px; 
+            color: #48484A; 
         }
-        body.mom-theme .home-card {
-            background: linear-gradient(135deg, rgba(255, 45, 85, 0.08), rgba(255, 149, 0, 0.08)) !important;
-            border-color: rgba(255, 45, 85, 0.3) !important;
+        
+        .trans-divider { margin: 15px 0 25px 50px; }
+        .trans-card { 
+            background: rgba(255,255,255,0.45); 
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 16px; 
+            padding: 14px; 
+            font-size: 13px; 
+            border: 1px solid rgba(255,255,255,0.3); 
         }
+        .trans-row { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 8px; }
+        .trans-row:last-child { margin-bottom: 0; }
+        .trans-icon { font-size: 16px; width: 24px; text-align: center; }
+        .trans-text { flex: 1; line-height: 1.5; color: #3A3A3C; }
 
-        .dining-wrap { display: flex; overflow-x: auto; gap: 8px; padding: 4px 0; scroll-snap-type: x mandatory; scrollbar-width: none; }
+        /* =========================================
+           6. 水平滑動卡片 (Carousel Selection)
+           ========================================= */
+        .dining-wrap { 
+            display: flex; 
+            overflow-x: auto; 
+            gap: 14px; 
+            padding: 8px 0; 
+            scroll-snap-type: x mandatory; 
+            scrollbar-width: none; 
+        }
         .dining-wrap::-webkit-scrollbar { display: none; }
-        .dining-card { flex: 0 0 88%; background: var(--card); border-radius: 14px; padding: 12px; border: 1px solid rgba(255,255,255,0.6); scroll-snap-align: start; }
-        .primary-choice { background: rgba(255, 253, 240, 0.95) !important; border: 1.5px solid rgba(255, 149, 0, 0.4) !important; }
-        .primary-tag { background: var(--accent); color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 800; margin-bottom: 4px; display: inline-block; }
-        .backup-tag { background: #8E8E93; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 800; margin-bottom: 4px; display: inline-block; }
 
-        /* Modals & Toast */
-        .modal { 
-            position: fixed; inset: 0; top: 40px; background: rgba(255, 255, 255, 0.96); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
-            z-index: 2000; display: none; padding: 30px 16px 50px; overflow-y: auto; border-top-left-radius: 20px; border-top-right-radius: 20px;
-            box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.12); transform: translateY(100%); transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        .dining-card { 
+            flex: 0 0 88%; 
+            background: var(--card); 
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-radius: 18px; 
+            padding: 18px; 
+            border: 1px solid rgba(255,255,255,0.4); 
+            box-shadow: 0 8px 20px rgba(0,0,0,0.03); 
+            scroll-snap-align: start; 
         }
-        .modal.active { display: block; transform: translateY(0); }
-        .modal-handle { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 32px; height: 4px; background: rgba(0, 0, 0, 0.15); border-radius: 2px; }
-        .close-x { position: fixed; top: 50px; right: 18px; font-size: 16px; font-weight: 600; cursor: pointer; color: var(--text-muted); background: rgba(0,0,0,0.05); width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 2001; }
+        
+        .primary-choice { 
+            background: rgba(255, 253, 240, 0.9) !important; 
+            border: 1.5px solid rgba(255, 149, 0, 0.4) !important; 
+            box-shadow: 0 8px 24px rgba(255, 149, 0, 0.08); 
+        }
+        .primary-tag { 
+            background: var(--accent); 
+            color: white; 
+            padding: 2px 8px; 
+            border-radius: 6px; 
+            font-size: 10px; 
+            font-weight: 800; 
+            margin-bottom: 6px; 
+            display: inline-block; 
+        }
+        .backup-tag { 
+            background: var(--text-muted); 
+            color: white; 
+            padding: 2px 8px; 
+            border-radius: 6px; 
+            font-size: 10px; 
+            font-weight: 800; 
+            margin-bottom: 6px; 
+            display: inline-block; 
+        }
+
+        .menu-pill { 
+            display: inline-block; 
+            background: rgba(10, 132, 255, 0.08); 
+            color: var(--primary); 
+            font-size: 11px; 
+            font-weight: 800; 
+            padding: 4px 10px; 
+            border-radius: 8px; 
+            margin-top: 10px; 
+        }
+
+        /* =========================================
+           7. 彈出模組 (iOS Bottom Sheet Drawers) & Toast
+           ========================================= */
+        .modal { 
+            position: fixed; 
+            inset: 0;
+            top: 45px; 
+            background: rgba(255, 255, 255, 0.92); 
+            backdrop-filter: blur(35px) saturate(190%);
+            -webkit-backdrop-filter: blur(35px) saturate(190%);
+            z-index: 2000; 
+            display: none; 
+            padding: 40px 20px 60px; 
+            overflow-y: auto; 
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
+            box-shadow: 0 -15px 40px rgba(0, 0, 0, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            transform: translateY(100%);
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .modal.active {
+            display: block;
+            transform: translateY(0);
+        }
+
+        .modal-handle {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 36px;
+            height: 5px;
+            background: rgba(0, 0, 0, 0.15);
+            border-radius: 2.5px;
+        }
+
+        .close-x { 
+            position: fixed; 
+            top: 65px; 
+            right: 25px; 
+            font-size: 20px; 
+            font-weight: 600; 
+            cursor: pointer; 
+            color: var(--text-muted); 
+            background: rgba(0,0,0,0.05);
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2001;
+        }
         
         #toast { 
-            position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.85); color: white; padding: 8px 20px; border-radius: 18px; font-size: 12px; font-weight: 600; display: none; z-index: 3000;
+            position: fixed; 
+            top: 30px; 
+            left: 50%; 
+            transform: translateX(-50%) translateY(-50px); 
+            background: rgba(0, 0, 0, 0.8); 
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            color: white; 
+            padding: 10px 24px; 
+            border-radius: 20px; 
+            font-size: 13px; 
+            font-weight: 600;
+            display: none; 
+            z-index: 3000; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        #toast.show { display: block; }
 
-        .info-table { width: 100%; border-collapse: collapse; font-size: 11px; margin: 8px 0; }
-        .info-table th, .info-table td { border: 1px solid rgba(0,0,0,0.08); padding: 6px; text-align: left; }
+        #toast.show {
+            display: block;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            margin: 10px 0;
+        }
+        .info-table th, .info-table td {
+            border: 1px solid rgba(0,0,0,0.08);
+            padding: 8px;
+            text-align: left;
+        }
         .info-table th { background: rgba(10, 132, 255, 0.05); color: var(--primary); }
     </style>
 </head>
 <body>
 
-    <!-- 頂部固定 Header 容器 (包含固定即時地圖) -->
-    <div class="sticky-header-wrapper">
-        <div class="mac-window">
-            <div class="mac-dots">
-                <span class="mac-dot red"></span>
-                <span class="mac-dot yellow"></span>
-                <span class="mac-dot green"></span>
-            </div>
-            <div class="mac-address-bar">busan-family-2026.app</div>
-            <h1 class="app-title" id="appMainHeader">BUSAN TRAVEL</h1>
+    <div class="mac-window">
+        <div class="mac-dots">
+            <span class="mac-dot red"></span>
+            <span class="mac-dot yellow"></span>
+            <span class="mac-dot green"></span>
         </div>
-
-        <!-- 頂部即時地圖視窗 -->
-        <div class="map-wrapper">
-            <div id="realtime-map"></div>
-            <button class="locate-me-btn" onclick="locateUser()">📍 我的位置</button>
-        </div>
-
-        <!-- 模式切換按鈕區 -->
-        <div class="mode-switch-bar">
-            <button id="btnMainMode" class="mode-btn active-main" onclick="switchTripMode('main')">👨‍👩‍👧‍👦 大部隊模式 (10/31起)</button>
-            <button id="btnMomMode" class="mode-btn" onclick="switchTripMode('mom')">👩‍👦 HaoChun帶娃模式 (11/01起)</button>
-        </div>
-
-        <!-- Segmented 天數選單 -->
-        <div class="day-nav" id="dayNav">
-            <button onclick="render(1)" class="active">D1</button>
-            <button onclick="render(2)">D2</button>
-            <button onclick="render(3)">D3</button>
-            <button onclick="render(4)">D4</button>
-            <button onclick="render(5)">D5</button>
-            <button onclick="render(6)">D6</button>
-            <button onclick="render(7)">D7</button>
-            <button onclick="render(8)">D8</button>
+        <div class="mac-address-bar">busan-family-2026.app</div>
+        <h1 class="app-title" id="appTitle">BUSAN TRAVEL</h1>
+        <span class="app-subtitle" id="appSubTitle">🇰🇷 2026 釜山 8 天 7 夜親子自由行 V13.0</span>
+        
+        <div class="mode-toggle-wrap">
+            <button class="mode-btn active" id="btnNormalMode" onclick="switchMode('normal')">👨‍👩‍👧‍👦 大部隊全圖</button>
+            <button class="mode-btn" id="btnMomMode" onclick="switchMode('mom')">👩‍👦 媽媽(HaoChun)專屬會合模式</button>
         </div>
     </div>
 
-    <!-- 快捷功能選單 -->
+    <div class="day-nav" id="dayNav"></div>
+
     <div class="tool-bar">
         <button class="tool-btn" onclick="showModal('care')">👶 育兒必看</button>
-        <button class="tool-btn" onclick="showModal('housing')" style="background:rgba(10,132,255,0.08); color:var(--primary);">🏡 兩大民宿導航</button>
-        <button class="tool-btn" onclick="showModal('momGuide')" style="background:rgba(255, 45, 85, 0.06); border:1px solid rgba(255, 45, 85, 0.2); color:var(--mom-mode);">👩‍👦 獨家出關會合</button>	
-        <button class="tool-btn" onclick="showModal('food')" style="background:rgba(255, 149, 0, 0.05); border:1px solid rgba(255,149,0,0.15);">🍱 全行程美食地圖</button>
+        <button class="tool-btn" onclick="showModal('housing')">🏡 住宿交通</button>
+        <button class="tool-btn" onclick="showModal('tickets')" style="background:rgba(10, 132, 255, 0.05); border:1px solid rgba(10,132,255,0.15);">🎟️ 搶票清單</button>	
+        <button class="tool-btn" onclick="showModal('food')" style="background:rgba(255, 149, 0, 0.05); border:1px solid rgba(255,149,0,0.15);">🍱 美食地圖</button>
         <button class="tool-btn" onclick="showModal('entry')" style="background:rgba(52, 199, 89, 0.05); border:1px solid rgba(52,199,89,0.15);">📄 機票航班</button>
-        <button class="tool-btn" onclick="showModal('sos')" style="color:#FF3B30">🆘 救急韓文/SOS</button>
+        <button class="tool-btn" onclick="showModal('sos')" style="color:#FF3B30">🆘 緊急求助</button>
     </div>
 
     <div id="dayTitleContainer"></div>
@@ -301,400 +564,1038 @@
         <div id="timelineContent"></div>
     </div>
 
-    <!-- Modals -->
+    <!-- Modal 1: 育兒與安撫指南 -->
     <div id="care-modal" class="modal">
         <div class="modal-handle"></div>
         <span class="close-x" onclick="hideModal('care')">✕</span>
-        <h2 style="color:var(--text-dark); margin-bottom: 12px; font-weight: 800; font-size:15px;">👶 育兒友善與嬰兒票注意事項</h2>
-        <div class="mom-guide-box">
-            <strong>🚨 嬰兒票（MuTong）綁定轉移事項：</strong><br>
-            • 因 HaoChun 延後至 11/01 出發，韓國與華航規定 2 歲以下嬰兒不可單獨搭機[cite: 2]。<br>
-            • <b>若 10/31 爸爸帶 MuTong 出發</b>：須提前聯繫華航將嬰兒票登記轉移至爸爸名下[cite: 2]。<br>
-            • <b>若 11/01 媽媽帶 MuTong 出發</b>：MuTong 與 HaoChun 搭乘同班機（11/01 CI188），票種繼續綁定即可[cite: 2]。
+        <h2 style="color:var(--text-dark); margin-bottom: 20px; font-weight: 800;">👶 9人團 (含1歲&4歲) 育兒友善小貼士</h2>
+        <div class="guide-box">
+            <strong>🍼 幼兒用餐建議</strong><br>
+            • 豬肉湯飯：湯頭清淡濃郁不辣，去骨肉片切碎，白飯直接泡湯，1歲小女兒與4歲大女兒接受度最高！<br>
+            • 炸醬麵與蒸蛋：龍宮海鮮炸醬麵與伍班長烤肉之免費蒸蛋，鹹甜不辣為幼兒吃飯神器。<br>
+            • 飯捲與魚糕：海雲台傳統市場「尚國家飯捲」與「古來思魚糕」，溫和高湯快速補充體力。
         </div>
         <div class="guide-box">
-            <strong>🍼 幼兒用餐與推車備忘</strong><br>
-            • 豬肉湯飯：湯頭清淡濃郁不辣，去骨肉片切碎泡飯，1歲與4歲小孩皆極度適合[cite: 2]。<br>
-            • 託運推車：隨行託運嬰兒推車，可在桃園與金海機場一路推至登機門口辦理機艙口託運[cite: 2]。
+            <strong>👩‍👦 媽媽單獨帶 1 歲幼兒 (HaoChun + MuTong) 出關SOP</strong><br>
+            • <b>登機門托運 (Gate Check)</b>：桃園 T1 櫃檯辦理時告知推車要推到登機門，一路使用推車至艙門。<br>
+            • <b>金海機場領取</b>：下機走出空橋第一時間領取推車，讓孩子坐上以空出雙手過海關。<br>
+            • <b>Priority 優先通道</b>：攜帶嬰幼兒可直接走韓國海關優先快速通關通道。<br>
+            • <b>絕不出地鐵，一律搭大車</b>：出 GATE 3 直接搭乘 Kakao T Venti 或 Jumbo Taxi 直達會合點。
         </div>
     </div>
 
+    <!-- Modal 2: 住宿與交通 -->
     <div id="housing-modal" class="modal">
         <div class="modal-handle"></div>
         <span class="close-x" onclick="hideModal('housing')">✕</span>
-        <h2 style="color:var(--primary); margin-bottom: 12px; font-weight: 800; font-size:15px;">🏡 兩大 Airbnb 住宿重點與導航</h2>
+        <h2 style="color:var(--primary); margin-bottom: 15px; font-weight: 800;">🏡 兩大 Airbnb 住宿與包車接駁</h2>
         
-        <div class="card" style="margin-bottom: 12px; border-left: 4px solid var(--primary);">
-            <strong style="color:var(--primary); font-size:14px;">🏠 D1-D5 海雲台 Dal-An Stay (前半段 5 晚)</strong>[cite: 2, 13]
-            <p style="font-size:11px; color:#555; margin:4px 0; line-height:1.4;">
-                • <b>格局設施</b>：4 間臥室、7 張床、2 間浴室（可容納至 14 人）[cite: 2, 13]。<br>
-                • <b>極佳位置</b>：海雲台傳統市場內，下樓即古南路商圈與海灘[cite: 2, 13]！<br>
-                • <b>入住方式</b>：採自助密碼鎖入住[cite: 2, 13]，提供免費行李寄存[cite: 2, 13]。<br>
-                • <b>特別提醒</b>：<b>位於 2-3 樓且需要爬樓梯</b>[cite: 2, 13]，搬運大行李與推車請多留意[cite: 2, 13]。
-            </p>
-            <div class="mom-guide-box" onclick="copy('해운대구 군남로41번길 11')">
-                🚕 <b>給計程車司機看 (點擊複製韓文地址)：</b><br>
-                "해운대구 군남로41번길 11로 가주세요."[cite: 2, 13]
-            </div>
+        <div class="card" style="margin-bottom: 15px; border-left: 5px solid var(--primary);">
+            <strong style="color:var(--primary); font-size:15px;">🏠 D1-D5 海雲台 Dal-An Stay</strong>
+            <p style="font-size:12px; color:#555; margin:5px 0;">4間臥室/7張床/2衛。傳統市場內，下樓即古南路與沙灘。</p>
+            <p onclick="copy('11 Gunam-ro 41beon-gil, Haeundae, Busan')">📍 <span style="text-decoration: underline; color: var(--primary);">11 Gunam-ro 41beon-gil, Haeundae, Busan</span> 📋</p>
+            <small style="color:var(--text-muted); display:block; margin-bottom:8px;">⚠️ 位於 2-3 樓無電梯需爬樓梯；門口為徒步區，計程車請於巷口上下車。</small>
             <div class="map-btn-group">
-                <button class="map-btn google" onclick="openGoogleMap('11 Gunam-ro 41beon-gil, Haeundae, Busan')">🗺️ Google Maps</button>
-                <button class="map-btn naver" onclick="openNaverMap('해운대구 군남로41번길 11')">🧭 Naver 一鍵回民宿</button>
+                <button class="map-btn nmap" onclick="openMap('11 Gunam-ro 41beon-gil, Haeundae, Busan', 'nmap')">🧭 Nmap 導航</button>
+                <button class="map-btn" onclick="openMap('11 Gunam-ro 41beon-gil, Haeundae, Busan', 'gmap')">🗺️ Google 地圖</button>
             </div>
         </div>
 
-        <div class="card" style="margin-bottom: 12px; border-left: 4px solid var(--primary-light);">
-            <strong style="color:var(--primary-light); font-size:14px;">🏠 D6-D7 西面 Angel Stay (後半段 2 晚)</strong>[cite: 2]
-            <p style="font-size:11px; color:#555; margin:4px 0; line-height:1.4;">
-                • <b>格局設施</b>：整層獨棟、戶外專屬露臺、3 張雙人床[cite: 2]。<br>
-                • <b>極佳位置</b>：田浦咖啡廳街旁邊，距離田浦站 1 分鐘、西面站 3 分鐘[cite: 2]。<br>
-                • <b>入住方式</b>：密碼鎖入住，提供免費行李寄存[cite: 2]。
-            </p>
-            <div class="mom-guide-box" onclick="copy('부산진구 동천로132번길 10')">
-                🚕 <b>給計程車司機看 (點擊複製韓文地址)：</b><br>
-                "부산진구 동천로132번길 10으로 가주세요."[cite: 2]
-            </div>
+        <div class="card" style="margin-bottom: 15px; border-left: 5px solid var(--primary-light);">
+            <strong style="color:var(--primary-light); font-size:15px;">🏠 D6-D7 西面 Angel Stay</strong>
+            <p style="font-size:12px; color:#555; margin:5px 0;">整層獨棟戶外露臺/3張雙人床。近田浦站(1分)與西面站(3分)。</p>
+            <p onclick="copy('10 Dongcheon-ro 132beon-gil, Busanjin-gu, Busan')">📍 <span style="text-decoration: underline; color: var(--primary);">10 Dongcheon-ro 132beon-gil, Busanjin-gu, Busan</span> 📋</p>
+            <small style="color:var(--text-muted); display:block; margin-bottom:8px;">★ 周邊地勢平坦，推車逛街極度友善。</small>
             <div class="map-btn-group">
-                <button class="map-btn google" onclick="openGoogleMap('10 Dongcheon-ro 132beon-gil, Busanjin-gu, Busan')">🗺️ Google Maps</button>
-                <button class="map-btn naver" onclick="openNaverMap('부산진구 동천로132번길 10')">🧭 Naver 一鍵回民宿</button>
+                <button class="map-btn nmap" onclick="openMap('10 Dongcheon-ro 132beon-gil, Busanjin-gu, Busan', 'nmap')">🧭 Nmap 導航</button>
+                <button class="map-btn" onclick="openMap('10 Dongcheon-ro 132beon-gil, Busanjin-gu, Busan', 'gmap')">🗺️ Google 地圖</button>
             </div>
+        </div>
+
+        <div class="guide-box">
+            <strong>🚖 9 人團用車攻略 (Jumbo Taxi / Venti)</strong><br>
+            一行 6大2童1嬰 + 大行李與推車，地鐵轉乘徒步距離長。強烈建議透過 Kakao T 預約 Jumbo Taxi (7-11人座) 或包車接送！<br>
+            • 機場 ➔ 海雲台：約 45-50 分鐘 (約 45,000 ~ 65,000 韓元)<br>
+            • 西面 ➔ 機場：約 30-35 分鐘 (約 30,000 ~ 40,000 韓元)
         </div>
     </div>
 
-    <div id="momGuide-modal" class="modal">
+    <!-- Modal 3: 搶票清單 -->
+    <div id="tickets-modal" class="modal">
         <div class="modal-handle"></div>
-        <span class="close-x" onclick="hideModal('momGuide')">✕</span>
-        <h2 style="color:var(--mom-mode); margin-bottom: 12px; font-weight: 800; font-size:15px;">👩‍👦 媽媽帶一歲娃獨自出發與會合攻略</h2>
-        <div class="mom-guide-box">
-            <strong>🛫 1. 桃園機場登機前 (11/01 清晨)</strong><br>
-            • <b>機艙口託運推車</b>：辦理 Check-in 時告知櫃檯「推車要用到登機門」，可一路推至登機門[cite: 2]。
+        <span class="close-x" onclick="hideModal('tickets')">✕</span>
+        <h2 style="color:var(--primary); margin-bottom: 15px; font-weight: 800;">🎟️ 搶票與票券準備攻略</h2>
+        
+        <div class="card" style="margin-bottom:12px; border-left: 5px solid #FF3B30;">
+            <strong>🚨 天空膠囊列車 (Sky Capsule)</strong> <span class="price-tag">必搶</span>
+            <p style="font-size:12px; color:#555; margin:4px 0;">乘車日前 4 週每週二 06:00 (台灣時間) 開放官網預約。目標：11/03 16:00 青沙浦 ➔ 尾浦 (夕陽黃金班次)。切換英文版勾選 FOREIGN CARD 付款。</p>
         </div>
-        <div class="mom-guide-box">
-            <strong>🛬 2. 釜山金海機場出關 (11/01 10:50 抵達)</strong><br>
-            • <b>走出空橋領推車</b>：下飛機第一時間在空橋出口向地勤領取推車[cite: 2]。<br>
-            • <b>優先通關</b>：帶 1 歲幼兒過韓國海關走 Priority 通道[cite: 2]。
+
+        <div class="card" style="margin-bottom:12px; border-left: 5px solid var(--accent);">
+            <strong>🚨 巨濟島一日遊專車</strong> <span class="price-tag">提前2-3週</span>
+            <p style="font-size:12px; color:#555; margin:4px 0;">出發前 2~3 週於 Klook/KKday 完成預訂。含外島渡輪與門票，免去 9 人跨海交通接駁問題。</p>
         </div>
-        <div class="mom-guide-box">
-            <strong>🚕 3. 直達會合點或海雲台房源</strong><br>
-            • 出 GATE 3 過馬路至計程車處搭乘 Jumbo Taxi[cite: 2]。<br>
-            • <b>會合方案 A (直達白淺灘)</b>：`영도 흰여울문화마을로 가주세요.`[cite: 2]<br>
-            • <b>會合方案 B (回房源)</b>：`해운대구 군남로41번길 11로 가주세요.`[cite: 2, 13]
+
+        <div class="card" style="margin-bottom:12px; border-left: 5px solid var(--secondary);">
+            <strong>💡 線上預購優惠 (SEA LIFE / Busan X the Sky)</strong>
+            <p style="font-size:12px; color:#555; margin:4px 0;">Klook/KKday 事先購買電子票，享 15-20% 折扣且可掃 QR Code 通關免排隊。</p>
         </div>
     </div>
 
+    <!-- Modal 4: 美食地圖 (新增區域互動地圖) -->
     <div id="food-modal" class="modal">
         <div class="modal-handle"></div>
         <span class="close-x" onclick="hideModal('food')">✕</span>
-        <h2 style="color:#D35400; font-weight: 800; font-size:15px;">🍱 釜山 8 天 7 夜精選美食大清單</h2>
+        <h2 style="color:#D35400; margin-bottom: 10px; font-weight: 800; font-size:16px;">🍱 釜山 8 天 7 夜精選美食大地圖</h2>
+        
+        <!-- 美食專屬地圖視窗 -->
+        <div id="food-map" style="width: 100%; height: 160px; border-radius: 12px; margin-bottom: 12px; border: 1px solid rgba(0,0,0,0.1); background: #e5e5ea; z-index: 5;"></div>
+
+        <div class="guide-box" style="margin-bottom: 12px; border-left-color: #D35400; background: rgba(211, 84, 0, 0.06);">
+            💡 <b>親子與孝親用餐提示：</b> 釜山豬肉湯飯、黑醬炸醬麵、烤盤邊緣蒸蛋與無骨炸雞皆為不辣菜色，非常適合 1 歲與 4 歲幼兒及長辈享用！
+        </div>
+
         <div id="foodListContainer"></div>
     </div>
 
+    <!-- Modal 5: 入境與航班 -->
     <div id="entry-modal" class="modal">
         <div class="modal-handle"></div>
         <span class="close-x" onclick="hideModal('entry')">✕</span>
-        <h2 style="margin-bottom: 12px; font-weight:800; font-size:15px;">✈️ 航班與人員異動摘要</h2>
+        <h2 style="margin-bottom: 15px; font-weight:800;">✈️ 航班與人員資料速查</h2>
         <table class="info-table">
-            <tr><th>大部隊去程</th><td>10/31 (六) 中華航空 CI188 (07:40 T1 ➔ 10:50 金海 I)[cite: 2, 14]</td></tr>
-            <tr><th>媽媽+MuTong去程</th><td>11/01 (日) 中華航空 CI188 (07:40 T1 ➔ 10:50 金海 I)[cite: 2, 14]</td></tr>
-            <tr><th>全員回程</th><td>11/07 (六) 中華航空 CI189 (11:50 金海 I ➔ 13:30 T1)[cite: 2, 14]</td></tr>
-            <tr><th>隨行車輛</th><td>託運 1 輛嬰兒推車（機艙口託運）[cite: 2]</td></tr>
+            <tr><th>大部隊去程</th><td>中華航空 CI188 (10/31 07:40 T1 ➔ 10:50 金海 I)</td></tr>
+            <tr><th>媽媽晚出發</th><td>中華航空 CI188 (11/01 07:40 T1 ➔ 10:50 金海 I)</td></tr>
+            <tr><th>全團回程</th><td>中華航空 CI189 (11/07 11:50 金海 I ➔ 13:30 T1)</td></tr>
+            <tr><th>團體成員</th><td>6 成人、2 兒童 (含4歲)、1 嬰幼兒 (1歲)，共 9 人</td></tr>
         </table>
     </div>
 
+    <!-- Modal 6: SOS 急救 -->
     <div id="sos-modal" class="modal">
         <div class="modal-handle"></div>
         <span class="close-x" onclick="hideModal('sos')">✕</span>
-        <h2 style="color:#FF3B30; margin-bottom: 12px; font-weight: 800; font-size:15px;">🆘 救急韓文與計程車字卡 (點擊複製)</h2>
-        <div class="card" style="margin-bottom:8px; border-left: 4px solid var(--mom-mode);" onclick="copy('영도 흰여울문화마을로 가주세요.')">
-            <strong>🚕 給計程車司機：去白淺灘文化村會合</strong>
-            <p style="font-size:11px; margin:2px 0;">영도 흰여울문화마을로 가주세요. 📋</p>
+        <h2 style="color:#FF3B30; margin-bottom: 20px; font-weight: 800;">🆘 釜山應急 SOS 手冊</h2>
+        <div class="card" style="margin-bottom:10px; border-left: 5px solid #FF3B30;" onclick="copy('영도 흰여울문화마을로 가주세요.')">
+            <strong>🚖 媽媽會合指示 (點擊複製韓文)</strong>
+            <p style="font-size:13px; margin:4px 0;">司機大哥，請帶我去影島白淺灘文化村！<br><small style="color:#666;">영도 흰여울문화마을로 가주세요.</small></p>
         </div>
-        <div class="card" style="margin-bottom:8px; border-left: 4px solid var(--primary);" onclick="copy('해운대구 군남로41번길 11로 가주세요.')">
-            <strong>🚕 給計程車司機：去海雲台 Dal-An 房源</strong>
-            <p style="font-size:11px; margin:2px 0;">해운대구 군남로41번길 11로 가주세요. 📋[cite: 2, 13]</p>
+        <div class="card" style="margin-bottom:10px; border-left: 5px solid #FF3B30;" onclick="copy('응급 환자가 있습니다. 도와주세요!')">
+            <strong>🚨 緊急醫療救援 (點擊複製韓文)</strong>
+            <p style="font-size:13px; margin:4px 0;">有緊急患者，請幫忙叫救護車！<br><small style="color:#666;">응급 환자가 있습니다. 도와주세요!</small></p>
         </div>
-        <div class="card" style="margin-bottom:8px; border-left: 4px solid var(--accent);" onclick="copy('트렁크에 유모차를 실어도 될까요?')">
-            <strong>🛺 詢問司機：後車廂可以放嬰兒推車嗎？</strong>
-            <p style="font-size:11px; margin:2px 0;">트렁크에 유모차를 실어도 될까요? 📋</p>
+        <div class="card" style="margin-bottom:10px; border-left: 5px solid var(--accent);" onclick="copy('아기 의자가 있나요?')">
+            <strong>👶 餐廳詢問兒童椅 (點擊複製韓文)</strong>
+            <p style="font-size:13px; margin:4px 0;">請問有兒童專用座椅嗎？<br><small style="color:#666;">아기 의자가 있나요?</small></p>
         </div>
         <div class="card" onclick="copy('1330')">
-            <strong>📞 韓國旅遊觀光諮詢熱線 (24hr 中文翻譯)</strong>
-            <p style="font-size:11px; margin:2px 0;">直撥 1330 (中文翻譯與緊急諮詢)</p>
+            <strong>📞 韓國旅遊觀光諮詢熱線 (可申訴與翻譯)</strong>
+            <p style="font-size:13px; margin:4px 0;">直撥 1330 (提供 24 小時免費中文服務)</p>
         </div>
     </div>
 
     <div id="toast">已複製到剪貼簿 📋</div>
 
     <script>
-        let currentMode = 'main'; 
-        let currentDay = 1;
-        let map = null, userMarker = null, userCircle = null;
-        let mapMarkers = [];
-
-        // 民宿收尾節點數據
-        const HOME_DALAN = {
-            title: "🏠 返回海雲台 Dal-An 房源休息",
-            time: "19:30 ~",
-            guide: "<b>【行程收尾】</b>結束充實行程，搭計程車返回 Dal-An 房源[cite: 2, 13]。讓幼兒早點洗沐休息[cite: 2]。",
-            addr: "11 Gunam-ro 41beon-gil, Haeundae, Busan",
-            koreanAddr: "해운대구 군남로41번길 11",
-            lat: 35.1612, lng: 129.1595,
-            isHome: true
-        };
-
-        const HOME_ANGEL = {
-            title: "🏠 返回西面 Angel 房源休息",
-            time: "19:30 ~",
-            guide: "<b>【行程收尾】</b>返回西面 Angel 房源[cite: 2]。整理戰利品並在獨立露臺放鬆[cite: 2]。",
-            addr: "10 Dongcheon-ro 132beon-gil, Busanjin-gu, Busan",
-            koreanAddr: "부산진구 동천로132번길 10",
-            lat: 35.1585, lng: 129.0632,
-            isHome: true
-        };
-
+        // 釜山全行程 + 獨家推薦美食資料庫
         const foodListData = [
-            { name: "尚國家飯捲 (상국이네)", info: "海雲台傳統市場入口名店，不辣飯捲搭溫和魚糕高湯[cite: 2]。", dish: "招牌飯捲 / 海鮮魚糕湯", addr: "상국이네", koreanAddr: "상국이네", lat: 35.1615, lng: 129.1601 },
-            { name: "古來思魚糕 (海雲台店)", info: "多種現做爆漿魚糕、熱起司棒與溫和高湯魚糕麵[cite: 2]。", dish: "起司魚糕 / 溫和魚糕麵", addr: "고래사어묵 해운대점", koreanAddr: "고래사어묵 해운대점", lat: 35.1610, lng: 129.1588 },
-            { name: "密陽血腸豬肉湯飯", info: "湯頭濃郁清甜不辣，肉質極嫩無骨，幼兒泡飯首選[cite: 2]。", dish: "豬肉湯飯", addr: "밀양순대돼지국밥 해운대점", koreanAddr: "밀양순대돼지국밥 해운대점", lat: 35.1605, lng: 129.1590 },
-            { name: "伍班長烤肉 (오반장)", info: "海雲台超高人氣炭火烤肉，免費附贈邊緣甜美蒸蛋[cite: 2]。", dish: "烤豬五花 / 邊緣蒸蛋", addr: "오반장", koreanAddr: "오반장", lat: 35.1620, lng: 129.1612 },
-            { name: "龍宮海鮮炸醬麵", info: "海東龍宮寺旁，招牌韓式黑醬炸醬麵鹹甜不辣[cite: 2]。", dish: "海鮮炸醬麵 / 糖醋肉", addr: "용궁해물쟁반짜장", koreanAddr: "용궁해물쟁반짜장", lat: 35.1901, lng: 129.2225 },
-            { name: "富平漢陽豬腳", info: "招牌原味豬腳肉質 Q 彈薄切、不油不辣[cite: 2]。", dish: "原味豬腳", addr: "한양족발", koreanAddr: "한양족발", lat: 35.1002, lng: 129.0255 },
-            { name: "松亭三代豬肉湯飯", info: "西面 70 年老字號，大骨高湯香濃順口[cite: 2]。", dish: "豬肉湯飯", addr: "송정3대국밥", koreanAddr: "송정3대국밥", lat: 35.1555, lng: 129.0580 },
-            { name: "味贊王鹽烤肉 (맛찬들)", info: "3.5cm 超厚切豬五花，專人全程桌邊代烤[cite: 2]。", dish: "厚切熟成豬五花", addr: "맛찬들왕소금구이 서면점", koreanAddr: "맛찬들왕소금구이 서면점", lat: 35.1560, lng: 129.0588 }
+            // --- 【海雲台 / 尾浦 / 青沙浦 區域】 ---
+            { 
+                name: "尚國家飯捲 (상국이네)", 
+                area: "海雲台傳統市場",
+                info: "【D1午餐首選】Dal-An 房源樓下！三大飯捲之一，大鍋熬煮的免費魚糕高湯可無限享用，不辣飯捲極適合剛下飛機的幼兒暖胃。", 
+                dish: "招牌飯捲 / 魚糕湯 / 年糕", 
+                addr: "상국이네", 
+                koreanAddr: "상국이네", 
+                lat: 35.1615, lng: 129.1601 
+            },
+            { 
+                name: "古來思魚糕 (고래사어묵 海雲台店)", 
+                area: "古南路大街",
+                info: "【D1午餐備案/點心】門口有巨型魚糕地標。多種現做爆漿起司魚糕串、年糕棒，內用提供免費高湯與兒童高腳椅。", 
+                dish: "起司魚糕 / 溫和魚糕烏龍麵", 
+                addr: "고래사어묵 해운대점", 
+                koreanAddr: "고래사어묵 해운대점", 
+                lat: 35.1610, lng: 129.1588 
+            },
+            { 
+                name: "密陽血腸豬肉湯飯 (밀양순대돼지국밥)", 
+                area: "海雲台古南路",
+                info: "【D1晚餐/D5午餐首選】24小時營業。大骨熬製高湯清甜濃郁且完全不辣，去油豬肉片極軟嫩，適合舀湯泡飯餵食幼兒。", 
+                dish: "豬肉湯飯 / 白切肉定食", 
+                addr: "밀양순대돼지국밥 해운대점", 
+                koreanAddr: "밀양순대돼지국밥 해운대점", 
+                lat: 35.1605, lng: 129.1590 
+            },
+            { 
+                name: "伍班長烤肉 (오반장)", 
+                area: "海雲台古南路巷內",
+                info: "【D1晚餐備案/D4晚餐首選】高人氣炭火烤肉。特製烤盤外圈免費附贈滑嫩甜蒸蛋（無限續加），小朋友超愛吃！", 
+                dish: "炭火烤豬五花 / 烤盤邊緣甜蒸蛋", 
+                addr: "오반장", 
+                koreanAddr: "오반장", 
+                lat: 35.1620, lng: 129.1612 
+            },
+            { 
+                name: "海雲台 尾浦家 (미포집)", 
+                area: "尾浦站 / LCT 旁",
+                info: "【D5午餐備案】大人享用奢華生醃海鮮八寶醬蟹拼盤；幼兒可享用附贈不辣的熱騰騰鮑魚釜飯、烘蛋與海苔。", 
+                dish: "生醃海鮮醬蟹 / 鮑魚釜飯", 
+                addr: "미포집 해운대본점", 
+                koreanAddr: "미포집 해운대본점", 
+                lat: 35.1601, lng: 129.1682 
+            },
+            { 
+                name: "Fingers & Chat (The Bay 101)", 
+                area: "冬柏島入口",
+                info: "【D5晚餐/點心】現炸無骨炸魚薯條外酥內嫩完全不辣，可於露天座椅區邊吃點心邊欣賞 Marine City 摩天大樓夜景。", 
+                dish: "現炸無骨魚塊 / 現炸薯條", 
+                addr: "The Bay 101", 
+                koreanAddr: "더베이101", 
+                lat: 35.1567, lng: 129.1523 
+            },
+            { 
+                name: "青沙浦海景咖啡廳 (H.US Coffee)", 
+                area: "青沙浦海岸第一排",
+                info: "【D4下午茶】大片落地窗正對青沙浦藍海與雙燈塔。內用沙發區寬敞，適合大人看海放鬆、小孩在推車上記續午睡。", 
+                dish: "手沖海景咖啡 / 造型甜甜圈", 
+                addr: "H.US Coffee", 
+                koreanAddr: "에이치어스", 
+                lat: 35.1610, lng: 129.1920 
+            },
+
+            // --- 【東釜山 / 機張 區域】 ---
+            { 
+                name: "龍宮海鮮炸醬麵 (용궁해물쟁반짜장)", 
+                area: "海東龍宮寺入口",
+                info: "【D4午餐首選】龍宮寺出口斜坡步行 5 分鐘。招牌黑醬炸醬麵滿載海鮮且鹹甜不辣，糖醋肉外酥內軟，孩子接受度 100%。", 
+                dish: "海鮮鐵板炸醬麵 / 糖醋肉", 
+                addr: "용궁해물쟁반짜장", 
+                koreanAddr: "용궁해물쟁반짜장", 
+                lat: 35.1901, lng: 129.2225 
+            },
+
+            // --- 【松島 / 影島 / 南浦洞 區域】 ---
+            { 
+                name: "岩南公園美食街 / 崔氏烤貝", 
+                area: "松島纜車岩南公園站",
+                info: "【D2午餐首选】纜車站 1F 美食街提供熱騰騰不辣海鮮刀削麵；帳篷區烤貝拼盤會附贈起司大蝦與漢堡排，小孩很喜歡。", 
+                dish: "不辣海鮮刀削麵 / 起司烤貝", 
+                addr: "Amnam Park", 
+                koreanAddr: "암남공원", 
+                lat: 35.0620, lng: 129.0195 
+            },
+            { 
+                name: "富平漢陽豬腳 (한양족발)", 
+                area: "南浦洞豬腳一條街",
+                info: "【D2晚餐首選】老字號原味醬香豬腳切得薄透 Q 彈，富含膠原蛋白且不油不辣，附贈溫和豆腐湯與沙發座，極適合幼兒。", 
+                dish: "原味醬香豬腳 / 涼拌豬腳", 
+                addr: "한양족발", 
+                koreanAddr: "한양족발", 
+                lat: 35.1002, lng: 129.0255 
+            },
+            { 
+                name: "本粥 (본죽 松島店)", 
+                area: "松島海水浴場",
+                info: "【D2午餐備案】韓國國民養生粥品，質地軟爛溫和且營養豐富，是 1 歲與 4 歲幼兒最佳消化與用餐選擇。", 
+                dish: "鮑魚牛肉粥 / 海鮮蔬菜粥", 
+                addr: "본죽 송도점", 
+                koreanAddr: "본죽 송도점", 
+                lat: 35.0755, lng: 129.0220 
+            },
+
+            // --- 【新世界 Centum City / 廣安里 區域】 ---
+            { 
+                name: "新世界 Centum City 地下美食街", 
+                area: "Centum City 百貨 B1",
+                info: "【D3午餐首選】亞洲最大百貨美食街！推薦少年食堂醬蝦蓋飯與韓式牛肉定食，設有專屬兒童高腳椅與親子用餐區。", 
+                dish: "韓式牛肉定食 / 醬蝦蓋飯", 
+                addr: "Shinsegae Centum City", 
+                koreanAddr: "신세계백화점 센텀시티점", 
+                lat: 35.1689, lng: 129.1297 
+            },
+            { 
+                name: "民樂生魚片城 / 海景熟食 (민락회타운)", 
+                area: "廣安里沙灘東側",
+                info: "【D3晚餐首選】高樓層大片落地窗正對廣安大橋夜景第一排！提供新鮮生魚片，熟食鮑魚粥與海鮮煎餅不辣軟嫩，適合幼兒。", 
+                dish: "生魚片拼盤 / 熟食鮑魚粥", 
+                addr: "민락회타운", 
+                koreanAddr: "민락회타운", 
+                lat: 35.1545, lng: 129.1240 
+            },
+
+            // --- 【西面 / 田浦 / 梵魚寺 區域】 ---
+            { 
+                name: "松亭三代豬肉湯飯 (송정삼대돼지국밥)", 
+                area: "西面豬肉湯飯一條街",
+                info: "【D6/D7西面首選】70年老字號，大骨高湯經過長年熬煮清甜溫和，白切肉質地入口即化，非常適合幼兒泡飯。", 
+                dish: "豬肉湯飯 / 白切肉定食", 
+                addr: "송정3대국밥", 
+                koreanAddr: "송정3대국밥", 
+                lat: 35.1555, lng: 129.0580 
+            },
+            { 
+                name: "味贊王鹽烤肉 (맛찬들 西面店)", 
+                area: "西面樂天百貨周邊",
+                info: "【D6/D7西面首選】3.5cm 超厚切熟成豬五花，專人桌邊高溫代烤，外酥內嫩多汁，附不辣甜蒸蛋，爸媽輕鬆用餐。", 
+                dish: "3.5cm 厚切熟成豬五花", 
+                addr: "맛찬들왕소금구이 서면점", 
+                koreanAddr: "맛찬들왕소금구이 서면점", 
+                lat: 35.1560, lng: 129.0588 
+            },
+            { 
+                name: "機張刀削麵 (기장칼국수)", 
+                area: "西面傳統市場旁",
+                info: "【D6/D7西面麵食首選】米其林推薦在地老店。點餐請店家去除辣醬（주세요 다대기 빼）後，鮮甜高湯與手打麵是小朋友最愛。", 
+                dish: "手打熱刀削麵 / 韓式海鮮蒸餃", 
+                addr: "기장칼국수", 
+                koreanAddr: "기장칼국수", 
+                lat: 35.1550, lng: 129.0575 
+            },
+            { 
+                name: "西面 橋村炸雞 (Kyochon Chicken)", 
+                area: "西面商圈核心區",
+                info: "【D7晚餐首選】現炸蜂蜜系列無骨炸雞 (Honey Combo)，外皮酥脆包裹甜甜蜜汁完全不辣，無骨雞肉方便幼兒食用。", 
+                dish: "蜂蜜無骨炸雞 / 現炸薯條", 
+                addr: "교촌치킨 서면점", 
+                koreanAddr: "교촌치킨 서면점", 
+                lat: 35.1570, lng: 129.0595 
+            },
+            { 
+                name: "嶺南麵屋 (영남밀면)", 
+                area: "西面/田浦區域",
+                info: "【D6/D7西面冷麵首選】釜山代表名物小麥麵，水冷麵湯頭清涼甘甜，熱牛肉高湯麵濃郁溫暖，搭配現蒸肉餃超美味。", 
+                dish: "水小麥冷麵 / 熱牛肉湯麵", 
+                addr: "영남밀면", 
+                koreanAddr: "영남밀면", 
+                lat: 35.1565, lng: 129.0610 
+            },
+            { 
+                name: "梵魚寺山腳在地韓定食", 
+                area: "梵魚寺山腳",
+                info: "【D7午餐首選】賞楓後於山腳享用溫和不辣的韓式山菜定食、純豆腐鍋或高湯鴨肉飯，極具在地特色且對幼兒腸胃負擔低。", 
+                dish: "韓式山菜定食 / 高湯鴨肉飯", 
+                addr: "Beomeosa Temple", 
+                koreanAddr: "범어사", 
+                lat: 35.2820, lng: 129.0715 
+            },
+
+            // --- 【釜山極度推薦補充美食（未在主行程中）】 ---
+            { 
+                name: "BIFF 廣場 元祖黑糖堅果糖餅", 
+                area: "南浦洞 BIFF 廣場",
+                info: "【⭐ 釜山必吃散步小吃】以奶油現煎至金黃酥脆的餅皮切開，塞滿葵瓜子、花生、芝麻與黑糖粒，香甜酥翠。", 
+                dish: "元祖黑糖堅果糖餅 (씨앗호떡)", 
+                addr: "BIFF Square", 
+                koreanAddr: "BIFF 광장", 
+                lat: 35.0988, lng: 129.0298 
+            },
+            { 
+                name: "海雲台市場 蘆會長糖餅", 
+                area: "海雲台傳統市場內",
+                info: "【⭐ Dal-An 房源樓下必買】現做現煎，外皮 Q 彈，黑糖內餡濃郁熱騰騰，排隊人潮絡繹不絕。", 
+                dish: "堅果黑糖餅", 
+                addr: "海雲台傳統市場", 
+                koreanAddr: "해운대시장", 
+                lat: 35.1614, lng: 129.1600 
+            },
+            { 
+                name: "雪冰 (Sulbing 雪빙 海雲台店)", 
+                area: "古南路大街",
+                info: "【⭐ 韓國國民冰品】招牌黃豆粉年糕雪冰、新鮮草莓雪冰，大人喝咖啡提神、小孩享用綿密雪花冰。", 
+                dish: "黃豆粉年糕雪冰 / 鮮果刨冰", 
+                addr: "설빙 해운대점", 
+                koreanAddr: "설빙 해운대점", 
+                lat: 35.1608, lng: 129.1585 
+            },
+            { 
+                name: "Cafe Knotted (海雲台店)", 
+                area: "古南路大街",
+                info: "【⭐ 人氣甜甜圈】韓國超人氣爆漿甜甜圈，牛奶奶油餡濃郁滑順不甜膩，店內黃色小熊包裝極度可愛。", 
+                dish: "牛奶奶油甜甜圈", 
+                addr: "노티드 해운대", 
+                koreanAddr: "노티드 해운대", 
+                lat: 35.1609, lng: 129.1586 
+            },
+            { 
+                name: "百濟參雞湯 (백제삼계탕)", 
+                area: "南浦洞 / 西面樂天周邊",
+                info: "【⭐ 養生大補首選】以嫩雞包裹糯米、人參、紅棗長時間燉煮，雞肉一撥即離骨，高湯清甜極滋補幼兒。", 
+                dish: "原味人參雞湯", 
+                addr: "백제삼계탕", 
+                koreanAddr: "백제삼계탕", 
+                lat: 35.0995, lng: 129.0305 
+            }
         ];
 
-        // 大部隊行程（包含首選/備案美食與一鍵回民宿收尾）
-        const mainTripData = {
+        let currentMode = 'normal'; // 'normal' 或 'mom'
+        let currentDay = 1;
+
+        // 全團大部隊標準行程 (D1 ~ D8)
+        const normalTripData = {
             1: {
-                title: "D1 (10/31 六): 抵達釜山與海雲台慢活散策",
+                title: "抵達釜山與海雲台慢活散策",
                 nodes: [
-                    { time: "07:40 - 10:50", title: "搭乘華航 CI188 飛抵釜山", guide: "【大部隊啟程】桃園 T1 出發 ➔ 10:50 抵達金海機場 I[cite: 2, 14]。", lat: 35.1795, lng: 128.9382 },
-                    { trans: [{ type: "🚖", text: "<b>預約 Jumbo Taxi 直達海雲台 Dal-An 房源</b>[cite: 2, 13]", addr: "11 Gunam-ro 41beon-gil, Haeundae, Busan", koreanAddr: "해운대구 군남로41번길 11" }] },
-                    { time: "12:30 - 14:00", title: "Dal-An 房源寄行李 ➔ 尚國家飯捲午餐", isDining: true, options: [
-                        { name: "尚國家飯捲 (상국이네)", info: "【首選】樓下傳統市場內！不辣飯捲搭魚糕湯[cite: 2]。", dish: "招牌飯捲 / 魚糕湯", addr: "상국이네", koreanAddr: "상국이네", isPrimary: true, lat: 35.1615, lng: 129.1601 },
-                        { name: "古來思魚糕 (海雲台店)", info: "【備案】古南路現做魚糕與溫和烏龍麵[cite: 2]。", dish: "起司魚糕 / 烏龍麵", addr: "고래사어묵 해운대점", koreanAddr: "고래사어묵 해운대점", isPrimary: false, lat: 35.1610, lng: 129.1588 }
+                    { time: "07:40 - 10:50", title: "搭乘華航 CI188 飛抵釜山", stay: "N/A", guide: "【啟程】桃園 T1 出發 ➔ 10:50 抵達金海機場 I，辦理出關並領取託運之嬰兒推車。" },
+                    { trans: [{ type: "🚖", text: "<b>預約 Jumbo Taxi / 大型包車</b><br>直達海雲台 Dal-An 房源（車程約 50 分鐘），免去沙上站大轉乘之苦。", addr: "11 Gunam-ro 41beon-gil, Haeundae, Busan" }] },
+                    { time: "12:30 - 14:00", title: "Dal-An 房源寄放行李 ➔ 尚國家飯捲午餐", isDining: true, options: [
+                        { name: "尚國家飯捲 (상국이네)", info: "首選：房源樓下傳統市場內！不辣飯捲搭溫和魚糕高湯，快速補給體力。", dish: "招牌飯捲 / 魚糕湯", addr: "상국이네", isPrimary: true },
+                        { name: "古來思魚糕 (海雲台店)", info: "備案：寬敞店面，現選現熱熱騰騰魚糕麵，幼兒接受度高。", dish: "章魚魚糕 / 魚糕烏龍麵", addr: "고래사어묵 해운대점", isPrimary: false }
                     ]},
-                    { time: "15:30 - 17:30", title: "海雲台沙灘 (Haeundae Beach) 放電 🏖️", addr: "Haeundae Beach", koreanAddr: "해운대해수욕장", guide: "【放電】讓孩子在乾淨沙灘踩水玩沙[cite: 2]。", lat: 35.1587, lng: 129.1604 },
-                    { time: "17:30 - 19:30", title: "海雲台傳統市場晚餐 ➔ 返房休息", isDining: true, options: [
-                        { name: "海雲台傳統市場豬肉湯飯", info: "【首選】大骨高湯極適合幼兒泡飯[cite: 2]。", dish: "豬肉湯飯", addr: "海雲台傳統市場", koreanAddr: "해운대시장", isPrimary: true, lat: 35.1614, lng: 129.1600 }
-                    ]},
-                    HOME_DALAN
+                    { time: "14:00 - 15:30", title: "古南路 (Gunam-ro) 百貨大街慢活散策 🛍️", addr: "Gunam-ro, Busan", stay: "1.5hr", guide: "【散步採買】寬敞平坦，逛 Olive Young 美妝、Daiso、人生四格拍貼店與 T1 Base。" },
+                    { time: "15:30 - 17:30", title: "海雲台沙灘 (Haeundae Beach) 踩水放電 🏖️", addr: "Haeundae Beach", stay: "2hr", guide: "【放電】讓 4 歲大女兒與 1 歲小女兒在乾淨沙灘踩水玩沙，欣賞黃昏海岸魔幻時刻。" },
+                    { time: "17:30 - 19:30", title: "晚餐三方案選擇 ➔ 噴泉表演 ➔ 糖餅補給", isDining: true, options: [
+                        { name: "海雲台傳統市場豬肉湯飯", info: "方案A (首選)：樓下傳統市場內，清甜高湯去油豬肉片，極適合幼兒泡飯，吃完直接上樓休息。", dish: "豬肉湯飯 (돼지국밥)", addr: "해운대 전통시장", isPrimary: true },
+                        { name: "伍班長烤肉 (오반장)", info: "方案B：古南路巷內，炭火烤肉免費附贈邊緣甜蒸蛋，小孩超愛。", dish: "烤豬五花 / 邊緣蒸蛋", addr: "오반장", isPrimary: false },
+                        { name: "味贊王鹽烤肉 (맛찬들)", info: "方案C：全程專人桌邊代烤，大人免動手照顧火爐，安全省力。", dish: "3.5cm 厚切熟成豬五花", addr: "맛찬들왕소금구이 해운대점", isPrimary: false }
+                    ]}
                 ]
             },
             2: {
-                title: "D2 (11/01 日): 白淺灘放電、岩南公園、逆向纜車與南浦洞",
+                title: "古寺、賽車、海景平交道與夕陽膠囊列車",
                 nodes: [
-                    { time: "09:00 - 09:40", title: "房源出發 ➔ 白淺灘文化村 🌊", addr: "Huinnyeoul Culture Village", koreanAddr: "흰여울문화마을", guide: "僅在上層平路推車散步、入座海景咖啡廳[cite: 2]。", lat: 35.0786, lng: 129.0445 },
-                    { time: "12:20 - 14:00", title: "岩南公園 ➔ 在地美食街午餐", isDining: true, options: [
-                        { name: "岩南公園在地美食街/烤貝", info: "【首選】提供熱騰騰不辣海鮮麵與蒸蛋[cite: 2]。", dish: "海鮮刀削麵 / 蒸蛋", addr: "Amnam Park", koreanAddr: "암남공원", isPrimary: true, lat: 35.0620, lng: 129.0195 }
-                    ]},
-                    { time: "14:00 - 15:40", title: "松島海上纜車 (逆向: 岩南公園 ➔ 松島灣站) 🌉", addr: "Songdo Skywalk", koreanAddr: "송도구름산책로", guide: "逆向策略完全免排隊登水晶車廂[cite: 2]。", lat: 35.0760, lng: 129.0230 },
-                    { time: "18:30 - 20:00", title: "晚餐：富平豬腳一條街 (漢陽豬腳)", isDining: true, options: [
-                        { name: "漢陽豬腳 (한양족발)", info: "【首選】招牌原味豬腳肉質 Q 彈薄切不油不辣[cite: 2]。", dish: "原味豬腳", addr: "한양족발", koreanAddr: "한양족발", isPrimary: true, lat: 35.1002, lng: 129.0255 }
-                    ]},
-                    HOME_DALAN
+                    { 
+                        time: "09:00 - 09:40", 
+                        title: "海雲台 Dal-An 房源出發 ➔ 影島白淺灘文化村 🌊", 
+                        addr: "Huinnyeoul Culture Village", 
+                        stay: "35min", 
+                        guide: "【跨區移動】搭乘 Jumbo Taxi / 大型計程車直達影島（車程約 35 分鐘）。" 
+                    },
+                    { 
+                        time: "09:40 - 12:00", 
+                        title: "白淺灘文化村懸崖上層散策 & 海景咖啡廳 ☕", 
+                        addr: "Huinnyeoul Culture Village", 
+                        stay: "2.5hr", 
+                        guide: "【重點貼士】絕影海岸散步路階梯極多且陡峭，嚴禁推車！請全程留在懸崖上方「馬路主幹道平路」散步與拍照。" 
+                    },
+                    {
+                        isBranchSelector: true,
+                        title: "🔀 離開白淺灘時：請選擇下午 Cable Car 纜車動線支線"
+                    },
+                    // ===== 支線 A：【逆向纜車方案】（預設首選） =====
+                    {
+                        branch: "A",
+                        time: "12:00 - 12:20",
+                        title: "【支線 A】短程移動：白淺灘 ➔ 岩南公園 🚖",
+                        addr: "Amnam Park",
+                        stay: "15min",
+                        guide: "搭乘計程車跨越南港大橋直達岩南公園（車程約 15 分鐘，小孩在車上休息）。"
+                    },
+                    {
+                        branch: "A",
+                        time: "12:20 - 14:00",
+                        title: "【支線 A】岩南公園 & 龍宮雲橋 & 午餐 🍴",
+                        isDining: true,
+                        options: [
+                            { name: "岩南公園 1F/3F 美食街", info: "首選：熱騰騰不辣海鮮刀削麵、烏龍麵與魚糕湯，座位寬敞，適合幼兒泡飯與吃飽後在推車上順暢午睡。", dish: "海鮮刀削麵 / 烏龍麵", addr: "Amnam Park", isPrimary: true },
+                            { name: "岩南公園烤貝帳篷街 (崔氏烤貝/海生家)", info: "備案：烤貝拼盤附贈起司大蝦、漢堡排與起司拉麵，甜鹹口味 4 歲小孩非常喜歡。", dish: "起司大蝦 / 漢堡排", addr: "Amnam Park", isPrimary: false }
+                        ]
+                    },
+                    {
+                        branch: "A",
+                        time: "14:00 - 14:40",
+                        title: "【支線 A】松島海上纜車 (逆向：岩南公園站 ➔ 松島灣站) 🪟",
+                        addr: "Songdo Cable Car Amnam Park",
+                        stay: "40min",
+                        guide: "【逆向策略】採用逆向策略完全免排隊，隨到隨直接登上水晶透明車廂。"
+                    },
+                    {
+                        branch: "A",
+                        time: "14:40 - 15:40",
+                        title: "【支線 A】松島天空步道 漫步 🌉",
+                        addr: "Songdo Skywalk",
+                        stay: "1hr",
+                        guide: "漫步松島天空步道，由下往上仰望海景與天空中穿梭的纜車。"
+                    },
+
+                    // ===== 支線 B：【順向纜車方案】 =====
+                    {
+                        branch: "B",
+                        time: "12:00 - 12:20",
+                        title: "【支線 B】短程移動：白淺灘 ➔ 松島灣站 🚖",
+                        addr: "Songdo Sea Cable Car",
+                        stay: "15min",
+                        guide: "搭乘計程車跨越南港大橋直達松島海水浴場/松島灣站（車程約 15 分鐘）。"
+                    },
+                    {
+                        branch: "B",
+                        time: "12:20 - 13:20",
+                        title: "【支線 B】松島天空步道 漫步 🌉",
+                        addr: "Songdo Skywalk",
+                        stay: "1hr",
+                        guide: "漫步松島天空步道，欣賞海上雕像與腳下清澈海景。"
+                    },
+                    {
+                        branch: "B",
+                        time: "13:20 - 14:20",
+                        title: "【支線 B】松島海上纜車 (順向：松島灣站 ➔ 岩南公園站) 🪟",
+                        addr: "Songdo Sea Cable Car",
+                        stay: "1hr",
+                        guide: "【注意事項】上午/午後順向排隊人潮較多（特別是水晶車廂），建議預留 30~40 分鐘排隊等待時間。"
+                    },
+                    {
+                        branch: "B",
+                        time: "14:20 - 15:40",
+                        title: "【支線 B】岩南公園 & 龍宮雲橋 & 午餐/早午餐 🍴",
+                        isDining: true,
+                        options: [
+                            { name: "松島海水浴場沿海 - 本粥 (본죽)", info: "首選：營養海鮮粥、牛肉蔬菜粥，質地軟爛溫和，1 歲與 4 歲幼兒的最佳營養選擇。", dish: "海鮮粥 / 牛肉蔬菜粥", addr: "본죽 송도점", isPrimary: true },
+                            { name: "岩南公園纜車站 1F 美食街", info: "備案：熱烏龍麵、魚糕湯與韓式炸雞。", dish: "烏龍麵 / 韓式炸雞", addr: "Amnam Park", isPrimary: false }
+                        ]
+                    },
+
+                    // ===== 公用結尾：南浦洞與晚餐 =====
+                    {
+                        time: "15:40 - 18:30",
+                        title: "南浦洞商圈 & 必逛巡禮 (ABC-MART / ARTBOX / Olive Young) 🛍️",
+                        addr: "BIFF Square",
+                        stay: "2.5hr",
+                        guide: "【必逛亮點】擁有完整 2.5 小時採買：<br>1. <b>ABC-MART Grand Stage</b>：全釜山最大鞋款旗艦店<br>2. <b>ARTBOX</b>：可愛卡通 IP 周邊與 Bath Bomb 泡澡球（買給 4 歲大女兒當獎勵）<br>3. <b>樂天百貨光復店 5F</b>：頂級五星級育嬰室備案<br>4. <b>BIFF 廣場</b>：現煎元祖黑糖堅果糖餅"
+                    },
+                    {
+                        time: "18:30 - 20:00",
+                        title: "晚餐：富平豬腳一條街 🍖",
+                        isDining: true,
+                        options: [
+                            { name: "漢陽豬腳 (한양족발)", info: "首選：招牌原味豬腳肉質 Q 彈薄切、不油不辣，附贈溫和豆腐湯與沙發座。", dish: "原味豬腳", addr: "한양족발", isPrimary: true },
+                            { name: "釜山豬腳 (부산족발)", info: "備案：老字號涼拌與原味豬腳，在地人熱門選擇。", dish: "原味豬腳", addr: "부산족발", isPrimary: false }
+                        ]
+                    }
                 ]
             },
             3: {
-                title: "D3 (11/02 一): 秋日賞楓、世界最大百貨與廣安大橋夜景",
+                title: "秋日賞楓、百貨充放電與廣安大橋夜景",
                 nodes: [
-                    { time: "09:00 - 09:40", title: "房源出發 ➔ 釜山兒童大公園 🍁", addr: "Busan Children's Grand Park", koreanAddr: "부산어린이대공원", guide: "全線平坦木棧步道，推車極度友善[cite: 2]。", lat: 35.1825, lng: 129.0410 },
-                    { time: "12:30 - 16:30", title: "新世界百貨 Centum City 店 (午餐 & 9F 恐龍公園) 🦖", isDining: true, options: [
-                        { name: "新世界 Centum City 地下美食街", info: "【首選】設專屬兒童高腳椅與親子用餐區[cite: 2]。", dish: "牛肉湯定食", addr: "Shinsegae Centum City", koreanAddr: "신세계백화점 센텀시티점", isPrimary: true, lat: 35.1689, lng: 129.1297 }
-                    ]},
-                    { time: "16:30 - 18:00", title: "廣安里沙灘步道 (Gwangalli Beach) 🌉", addr: "Gwangalli Beach", koreanAddr: "광안리해수욕장", guide: "沿海濱木棧道散步欣賞廣安大橋夜景[cite: 2]。", lat: 35.1532, lng: 129.1189 },
-                    HOME_DALAN
+                    { 
+                        time: "09:00 - 09:40", 
+                        title: "海雲台 Dal-An 房源出發 ➔ 釜山兒童大公園 🍁", 
+                        addr: "Busan Children's Grand Park", 
+                        stay: "35min", 
+                        guide: "【跨區移動】搭乘大型計程車/Jumbo Taxi 前往釜山兒童大公園（車程約 35 分鐘）。" 
+                    },
+                    { 
+                        time: "09:40 - 12:00", 
+                        title: "聖知谷水源地環湖賞楓 🚶‍♂️", 
+                        addr: "Busan Children's Grand Park", 
+                        stay: "2.2hr", 
+                        guide: "【賞楓重點】漫步環湖木棧步道，欣賞楓紅與水岸景色。全線平坦無障礙，推車極度友善。" 
+                    },
+                    {
+                        isDay3BranchSelector: true,
+                        title: "🔀 中午離開兒童大公園：請選擇下午百貨中繼站支線"
+                    },
+                    // ===== 支線 A：【新世界 Centum City 支線】（首選） =====
+                    {
+                        branch: "A",
+                        time: "12:00 - 12:30",
+                        title: "【支線 A】短程移動：兒童大公園 ➔ 新世界百貨 Centum City 店 🚖",
+                        addr: "Shinsegae Centum City",
+                        stay: "25min",
+                        guide: "搭乘計程車前往新世界百貨（車程約 25 分鐘）。"
+                    },
+                    {
+                        branch: "A",
+                        time: "12:30 - 16:15",
+                        title: "【支線 A】新世界百貨巡禮 & 美食街午餐 & 9F 恐龍公園放電 🦖",
+                        isDining: true,
+                        options: [
+                            { name: "新世界 Centum City B1 美食街", info: "首選：少年食堂醬蝦蓋飯、南坡家韓式定食，或各式不辣烏龍麵與高湯飯捲。", dish: "醬蝦蓋飯 / 溫和烏龍麵", addr: "Shinsegae Centum City", isPrimary: true },
+                            { name: "新世界 Centum City 9F 餐廳街 (Dim Tao)", info: "備案：精緻港式點心與咸興冷麵，設有獨立舒適沙發座與兒童椅。", dish: "港式點心 / 鮮蝦燒賣", addr: "Shinsegae Centum City", isPrimary: false }
+                        ]
+                    },
+                    {
+                        branch: "A",
+                        time: "14:00 - 16:15",
+                        title: "【支線 A】9F ZOORAJI 恐龍公園 & 6F 兒童區充電 🎠",
+                        addr: "Shinsegae Centum City",
+                        stay: "2.2hr",
+                        guide: "【親子亮點】9F 免門票恐龍露天主題公園可坐旋轉木馬與海盜船放電；6F 設有高級育嬰室，大人可輪流購物、讓小孩在推車上下午睡。"
+                    },
+                    {
+                        branch: "A",
+                        time: "16:15 - 16:30",
+                        title: "【支線 A】短程移動：新世界百貨 ➔ 廣安里沙灘 🚖",
+                        addr: "Gwangalli Beach",
+                        stay: "15min",
+                        guide: "距離廣安里極近！搭乘計程車約 12~15 分鐘即可抵達海岸。"
+                    },
+
+                    // ===== 支線 B：【西面樂天總店 支線】（備案） =====
+                    {
+                        branch: "B",
+                        time: "12:00 - 12:15",
+                        title: "【支線 B】快速移動：兒童大公園 ➔ 西面樂天百貨總店 🚖",
+                        addr: "Lotte Department Store Busan Main",
+                        stay: "12min",
+                        guide: "【車程最短】搭乘計程車車程僅 10~12 分鐘，能最快讓電力耗盡的小孩進室內休息。"
+                    },
+                    {
+                        branch: "B",
+                        time: "12:15 - 16:00",
+                        title: "【支線 B】樂天百貨 B1 滋補午餐 & 5F 頂級育嬰室充電 🥣",
+                        isDining: true,
+                        options: [
+                            { name: "樂天總店 B1 美食街 (百濟參雞湯)", info: "首選：雞湯溫和滋補，去骨雞肉與高湯極適合幼兒泡飯，另有鼎泰豐與不辣蒸餃。", dish: "百濟參雞湯 / 鮮肉蒸餃", addr: "Lotte Department Store Busan Main", isPrimary: true },
+                            { name: "樂天總店 9F 美食街 (味贊王分店)", info: "備案：味贊王鹽烤肉分店或溫和韓式豆腐鍋定食。", dish: "熟成烤豬五花", addr: "Lotte Department Store Busan Main", isPrimary: false }
+                        ]
+                    },
+                    {
+                        branch: "B",
+                        time: "13:30 - 16:00",
+                        title: "【支線 B】5F 頂級育嬰室休養 & 潮流品牌購物 🛍️",
+                        addr: "Lotte Department Store Busan Main",
+                        stay: "2.5hr",
+                        guide: "【頂級育嬰室】全釜山設備最完善育嬰室，適合 1 歲幼兒換尿布、泡奶與推車午睡，大人可輪流採買潮牌辦理退稅。"
+                    },
+                    {
+                        branch: "B",
+                        time: "16:00 - 16:30",
+                        title: "【支線 B】中程移動：西面樂天 ➔ 廣安里沙灘 🚖",
+                        addr: "Gwangalli Beach",
+                        stay: "25min",
+                        guide: "搭乘計程車約 20~25 分鐘，建議預留市區微塞車時間，於 16:30 前順利抵達海岸。"
+                    },
+
+                    // ===== 公用結尾：廣安里夕陽、沙灘步道與夜景晚餐 =====
+                    {
+                        time: "16:30 - 18:00",
+                        title: "廣安里沙灘步道散步 🌊",
+                        addr: "Gwangalli Beach",
+                        stay: "1.5hr",
+                        guide: "【景觀特色】1.4 公里月牙弧形沙灘正對廣安大橋。沿海平坦無障礙木棧道極適合推車，可欣賞夕陽粉紫與金黃漸變光暈。"
+                    },
+                    {
+                        time: "18:00 - 19:30",
+                        title: "廣安里海景晚餐 & 廣安大橋夜景 🌉",
+                        isDining: true,
+                        options: [
+                            { name: "民樂生魚片城 / 海景烤貝熟食 (민락회타운)", info: "首選：高樓層落地窗俯瞰廣安大橋夜景！熟食鮑魚粥與海鮮煎餅不辣軟嫩，適合幼兒。", dish: "鮑魚粥 / 海鮮熟食拼盤", addr: "Millak Raw Fish Center", isPrimary: true },
+                            { name: "廣安里 宿星 we (숙성도 廣安店)", info: "備案一：韓國頂級熟成烤肉名店，肉質軟嫩多汁，工作人員代烤，無敵海景第一排。", dish: "熟成黑豬肉五花", addr: "숙성도 광안점", isPrimary: false },
+                            { name: "廣安里 蛤蜊海鮮刀削麵", info: "備案二：湯頭鮮甜無辣味，麵條 Q 彈，極適合 1 歲與 4 歲小孩配湯吃麵。", dish: "巨無霸蛤蜊刀削麵", addr: "Gwangalli Beach", isPrimary: false }
+                        ]
+                    }
                 ]
             },
             4: {
-                title: "D4 (11/03 二): 古寺巡禮、海景平交道與夕陽天空膠囊列車",
+                title: "古寺巡禮、海景平交道與夕陽天空膠囊列車",
                 nodes: [
-                    { time: "09:30 - 10:00", title: "房源出發 ➔ 海東龍宮寺 ⛩️", addr: "Haedong Yonggungsa Temple", koreanAddr: "해동용궁사", guide: "韓國唯一建於海邊崖壁的古寺[cite: 2]。", lat: 35.1884, lng: 129.2233 },
-                    { time: "12:00 - 13:30", title: "午餐：龍宮海鮮炸醬麵 🍜", isDining: true, options: [
-                        { name: "龍宮海鮮炸醬麵", info: "【首選】韓式黑醬炸醬麵鹹甜不辣，小孩最愛[cite: 2]。", dish: "海鮮炸醬麵 / 糖醋肉", addr: "용궁해물쟁반짜장", koreanAddr: "용궁해물쟁반짜장", isPrimary: true, lat: 35.1901, lng: 129.2225 }
-                    ]},
-                    { time: "15:40 - 16:30", title: "天空膠囊列車 (青沙浦站 ➔ 尾浦站，預約 16:00) 🚃", addr: "Cheongsapo Station", koreanAddr: "청사포역", guide: "黃昏時刻行駛，飽覽金色海面與落日[cite: 2]！", lat: 35.1616, lng: 129.1918 },
-                    { time: "16:30 - 18:30", title: "晚餐：海雲台 伍班長烤肉 🥩", isDining: true, options: [
-                        { name: "伍班長烤肉 (오반장)", info: "【首選】炭火烤肉，烤盤邊免費蒸蛋[cite: 2]！", dish: "烤豬五花 / 蒸蛋", addr: "오반장", koreanAddr: "오반장", isPrimary: true, lat: 35.1620, lng: 129.1612 }
-                    ]},
-                    HOME_DALAN
+                    { 
+                        time: "09:30 - 10:00", 
+                        title: "海雲台 Dal-An 房源出發 ➔ 海東龍宮寺 🚖", 
+                        addr: "Haedong Yonggungsa Temple", 
+                        stay: "30min", 
+                        guide: "【跨區移動】自 Dal-An 房源門口搭乘 Kakao T 大型計程車 (Jumbo Taxi) 直達海東龍宮寺（車程約 20 分鐘）。" 
+                    },
+                    { 
+                        time: "10:00 - 11:40", 
+                        title: "海東龍宮寺參拜 & 海岸觀景 ⛩️", 
+                        addr: "Haedong Yonggungsa Temple", 
+                        stay: "1.7hr", 
+                        guide: "【⚠️ 推車重要提醒】寺廟入口有 108 階陡峭石階，<b>推車完全無法推進去</b>！請將推車寄放於入口，改用揹巾揹 1 歲妹妹，4 歲大女兒由大人牽著走。<br>💡 <b>彈性備案：</b>若龍宮寺因階梯走完提早結束，請勿去耗體力的 Outlet，直接提早前往青沙浦喝咖啡看海！" 
+                    },
+                    { 
+                        time: "11:40 - 13:00", 
+                        title: "午餐：龍宮海鮮炸醬麵 (용궁해물쟁반짜장) 🍜", 
+                        isDining: true, 
+                        options: [
+                            { name: "龍宮海鮮炸醬麵 (용궁해물쟁반짜장)", info: "首選：寺外斜坡步行 5 分鐘。招牌黑醬炸醬麵鹹甜不辣、糖醋肉外酥內軟，孩子接受度 100%。", dish: "海鮮醬炸醬麵 / 糖醋肉", addr: "용궁해물쟁반짜장", isPrimary: true },
+                            { name: "海東龍宮寺入口小吃攤街", info: "備案：現煮魚糕串、熱高湯與韓式雞蛋糕，適合快速墊胃。", dish: "魚糕串 / 雞蛋糕", addr: "Haedong Yonggungsa Temple", isPrimary: false }
+                        ]
+                    },
+                    { 
+                        time: "13:00 - 13:15", 
+                        title: "短程移動：龍宮寺 ➔ 青沙浦 🚖", 
+                        addr: "Cheongsapo", 
+                        stay: "15min", 
+                        guide: "吃飽後搭乘計程車直達青沙浦（車程僅約 10 分鐘，車資約 6,000 韓元）。" 
+                    },
+                    { 
+                        time: "13:15 - 15:40", 
+                        title: "青沙浦深度散策 & 海景咖啡廳 (小孩午睡充電影) 📸", 
+                        addr: "Cheongsapo", 
+                        stay: "2.4hr", 
+                        guide: "【青沙浦亮點指南】<br>1. <b>韓版灌籃高手平交道</b>：等候海岸列車通過拍攝絕美海景。<br>2. <b>紅白雙燈塔</b>：防波堤平坦步道，推車極度舒適。<br>3. <b>踏石展望台 (Skywalk)</b>：高空俯瞰清澈海水。<br>4. <b>海景咖啡廳 (H.US Coffee / Alice Donut)</b>：大片落地窗正對海景，大人喝咖啡，<b>讓 1 歲與 4 歲孩子在推車上順暢午睡補眠</b>。" 
+                    },
+                    { 
+                        time: "15:40 - 16:30", 
+                        title: "🚨 核心重頭戲：天空膠囊列車 (青沙浦站 ➔ 尾浦站，預約 16:00 班次) 🚃", 
+                        addr: "Cheongsapo Station", 
+                        stay: "50min", 
+                        guide: "【黃金夕陽班次】按車廂發售（請預訂 2 台 4人座車廂，1歲妹妹不佔位）。車廂行駛於靠海側軌道，坐在車內直擊金色海面與夕陽落日！" 
+                    },
+                    { 
+                        time: "16:30 - 17:30", 
+                        title: "尾浦舊鐵道木棧步道散策 (Green Railway) 🌊", 
+                        addr: "Mipo Station", 
+                        stay: "1hr", 
+                        guide: "【尾浦延伸路線】抵達尾浦站後，沿著全新鋪設的海濱木棧道 (Green Railway) 向海雲台方向慢散步。<b>完全無障礙無階梯，推車極度友善</b>！可打卡 LCT 摩天大樓海岸天際線。" 
+                    },
+                    { 
+                        time: "17:30 - 19:00", 
+                        title: "晚餐：海雲台伍班長烤肉 (오반장) 🥩", 
+                        isDining: true, 
+                        options: [
+                            { name: "伍班長烤肉 (오반장)", info: "首選：尾浦散步 10 分鐘即達古南路巷內。經典炭火烤肉，烤盤外圈免費贈送嫩甜蒸蛋與不辣豬肉，小孩超愛！", dish: "炭火烤豬五花 / 邊緣甜蒸蛋", addr: "오반장", isPrimary: true },
+                            { name: "海雲台傳統市場豬肉湯飯", info: "備案：清甜大骨高湯與去油豬肉片，配飯溫和不辣，吃完直接回房。", dish: "豬肉湯飯", addr: "해운대 전통시장", isPrimary: false }
+                        ]
+                    }
                 ]
             },
             5: {
-                title: "D5 (11/04 三): 親子海洋館、世峰樓步道與 The Bay 101 夜景",
+                title: "海雲台海洋館、100樓觀景台、冬柏島與 The Bay 101 落日夜景",
                 nodes: [
-                    { time: "10:00 - 12:00", title: "SEA LIFE 釜山海洋館 🦈", addr: "SEA LIFE Busan Aquarium", koreanAddr: "씨라이프부산아쿠아리움", guide: "觀賞鯊魚餵食秀與觸摸池互動[cite: 2]。", lat: 35.1593, lng: 129.1609 },
-                    { time: "13:30 - 15:30", title: "Busan X the Sky (100樓觀景台) 🏙️", addr: "BUSAN X the SKY", koreanAddr: "부산엑스더스카이", guide: "直達 100 樓俯瞰海岸線[cite: 2]。", lat: 35.1601, lng: 129.1682 },
-                    { time: "17:00 - 18:30", title: "The Bay 101 落日夜景 ➔ 享用點心", addr: "The Bay 101", koreanAddr: "더베이101", guide: "享用現炸無骨魚塊與薯條看摩天大樓夜景[cite: 2]。", lat: 35.1567, lng: 129.1523 },
-                    HOME_DALAN
+                    {
+                        time: "10:00 - 12:00",
+                        title: "SEA LIFE 釜山海洋館 (海底隧道 & 觸摸池) 🐬",
+                        addr: "SEA LIFE Busan Aquarium",
+                        stay: "2hr",
+                        guide: "【景點介紹】位於海雲台海灘地下的水族館，有 80m 海底隧道與鯊魚餵食表演。全程無障礙電梯與平坦坡道，推車極度友善。"
+                    },
+                    {
+                        time: "12:00 - 13:30",
+                        title: "午餐：海雲台在地美食 (豬肉湯飯 / 尾浦家醬蟹) 🍜",
+                        isDining: true,
+                        options: [
+                            { 
+                                name: "密陽血腸豬肉湯飯 (밀양순대돼지국밥)", 
+                                info: "首選：古南路大店面。大骨高湯清甜濃郁完全不辣，肉片去油，極度適合舀給 1 歲與 4 歲幼兒泡飯，備有兒童椅。", 
+                                dish: "豬肉湯飯 / 招牌高湯", 
+                                addr: "밀양순대돼지국밥 해운대점", 
+                                isPrimary: true 
+                            },
+                            { 
+                                name: "海雲台 尾浦家 (미포집)", 
+                                info: "備案：位於 LCT 大樓旁。大人享用奢華生醃海鮮醬蟹拼盤，幼兒享用熱騰騰不辣的鮑魚/香菇釜飯與烘蛋。", 
+                                dish: "海鮮醬蟹拼盤 / 精緻釜飯", 
+                                addr: "미포집 해운대본점", 
+                                isPrimary: false 
+                            }
+                        ]
+                    },
+                    {
+                        time: "13:30 - 15:30",
+                        title: "Busan X the Sky (100樓觀景台 & 世界最高星巴克) 🏙️",
+                        addr: "Busan X the Sky",
+                        stay: "2hr",
+                        guide: "【景點介紹】56秒直達 100 樓，360 度俯瞰海雲台月牙灣。空調舒適，若小孩在此時於推車上入睡，大人可以在沙發區安靜喝咖啡賞景。"
+                    },
+                    {
+                        time: "15:30 - 17:00",
+                        title: "冬柏島環島木棧道散策 & APCC 世峰樓 🌲",
+                        addr: "Dongbaekseom Island",
+                        stay: "1.5hr",
+                        guide: "【景點介紹】陸連島茂密林蔭步道。全程 100% 平坦無障礙木棧道，推車極度順暢，沿途可觀賞人魚雕像與海浪拍岸景色。"
+                    },
+                    {
+                        time: "17:00 - 18:30",
+                        title: "The Bay 101 (夕陽落日 & 摩天大樓點燈夜景) 🌇",
+                        isDining: true,
+                        options: [
+                            { 
+                                name: "Fingers & Chat (The Bay 101 內)", 
+                                info: "首選：17:15 欣賞黃昏落日，17:40 欣賞 Marine City 點燈倒影。享用現炸無骨魚塊與薯條（不辣軟嫩，幼兒最愛）。", 
+                                dish: "炸魚薯條 / 軟性飲料", 
+                                addr: "The Bay 101", 
+                                isPrimary: true 
+                            },
+                            { 
+                                name: "海雲台古南路/傳統市場美食街", 
+                                info: "備案：若想吃熱湯，拍完夜景後可散步回古南路享用溫和麵食或飯捲。", 
+                                dish: "魚糕湯 / 韓式飯捲", 
+                                addr: "11 Gunam-ro 41beon-gil, Haeundae, Busan", 
+                                isPrimary: false 
+                            }
+                        ]
+                    },
+                    {
+                        time: "18:30 - 19:30",
+                        title: "🏠 返回海雲台 Dal-An 房源 (20:00 幼兒準時躺平)",
+                        addr: "Dal-An Stay Haeundae",
+                        stay: "30min",
+                        guide: "【作息卡片】搭乘計程車（5分鐘）或散步 15 分鐘返回 Dal-An 房源。19:00 前抵達洗沐，確保幼兒於 20:00 準時躺平，維持優質體力。"
+                    }
                 ]
             },
             6: {
-                title: "D6 (11/05 四): 跨區大移動、西面樂天百貨與田浦文創散策",
+                title: "跨區移動、西面商圈購物、市民公園放電與田浦晚餐",
                 nodes: [
-                    { time: "10:30 - 11:30", title: "Dal-An 退房 ➔ 移動至西面 Angel 房源 寄行李", addr: "10 Dongcheon-ro 132beon-gil, Busanjin-gu, Busan", koreanAddr: "부산진구 동천로132번길 10", guide: "搭乘包車前往西面田浦寄行李[cite: 2]。", lat: 35.1585, lng: 129.0632 },
-                    { time: "11:30 - 13:00", title: "午餐：西面松亭三代豬肉湯飯 🍲", isDining: true, options: [
-                        { name: "松亭三代豬肉湯飯", info: "【首選】大骨高湯香濃順口，肉質入口即化[cite: 2]。", dish: "豬肉湯飯", addr: "송정3대국밥", koreanAddr: "송정3대국밥", isPrimary: true, lat: 35.1555, lng: 129.0580 }
-                    ]},
-                    { time: "17:30 - 19:30", title: "晚餐：味贊王鹽烤肉 🥩", isDining: true, options: [
-                        { name: "味贊王鹽烤肉 (맛찬들)", info: "【首選】3.5cm 厚切豬五花，專人桌邊代烤[cite: 2]！", dish: "厚切熟成豬五花", addr: "맛찬들왕소금구이 서면점", koreanAddr: "맛찬들왕소금구이 서면점", isPrimary: true, lat: 35.1560, lng: 129.0588 }
-                    ]},
-                    HOME_ANGEL
+                    { 
+                        time: "10:30 - 11:00", 
+                        title: "海雲台 Dal-An 房源退房 ➔ 西面 Angel 房源寄放行李 🚖", 
+                        addr: "Angel Stay Jeonpo", 
+                        stay: "30min", 
+                        guide: "【跨區移動】一家四口（2大2幼）獨自行動，搭乘大型計程車直達西面田浦 Angel 房源寄放行李（車程約 30 分鐘，司機協助搬運大行李與推車）。" 
+                    },
+                    { 
+                        time: "11:00 - 12:30", 
+                        title: "午餐：西面在地指標餐廳巡禮 (5選1) 🍜", 
+                        isDining: true, 
+                        options: [
+                            { name: "松亭三代豬肉湯飯 (송정삼대돼지국밥)", info: "首選：70年老字號，清甜大骨高湯與軟嫩白切肉，適合幼兒泡飯。", dish: "豬肉湯飯 / 白切肉定食", addr: "송정삼대돼지국밥", isPrimary: true },
+                            { name: "味贊王鹽烤肉 西面店 (맛찬들)", info: "備案一：3.5cm 超厚切豬五花，全程專人桌邊代烤，附蒸蛋與不辣小菜。", dish: "熟成厚切豬五花", addr: "맛찬들왕소금구이 서면점", isPrimary: false },
+                            { name: "機張刀削麵 (기장칼국수)", info: "備案二：米其林推薦平價手打麵，請店家去除辣醬，搭配不辣薄皮蒸餃。", dish: "手打刀削麵 / 海鮮蒸餃", addr: "기장칼국수", isPrimary: false },
+                            { name: "陝川大發豬肉湯飯 (합천일류돼지국밥)", info: "備案三：大骨蒜香濃郁高湯，白飯免費續加，店面寬敞推車方便。", dish: "內臟豬肉湯飯", addr: "합천일류돼지국밥", isPrimary: false },
+                            { name: "嶺南麵屋 (영남밀면)", info: "備案四：釜山名物水小麥麵，湯頭清涼甘甜，搭配熱牛肉湯麵與現蒸肉餃。", dish: "水小麥麵 / 熱湯麵", addr: "영남밀면", isPrimary: false }
+                        ]
+                    },
+                    { 
+                        time: "12:30 - 15:00", 
+                        title: "西面地下街 & 樂天百貨總店購物 (小孩推車午睡) 🛍️", 
+                        addr: "Seomyeon Underground Shopping Center", 
+                        stay: "2.5hr", 
+                        guide: "【購物與育兒】吃飽後小孩在推車上進入午睡。大人逛西面地下街採買平價童裝，或至樂天百貨總店 5F 使用全釜山最頂級育嬰室（溫水洗屁屁區/換尿布/哺乳室），輕鬆辦理退稅。" 
+                    },
+                    { 
+                        time: "15:00 - 17:30", 
+                        title: "釜山市民公園 (Busan Citizens Park) 親子放電 🌳", 
+                        addr: "Busan Citizens Park", 
+                        stay: "2.5hr", 
+                        guide: "【計程車快速移動】於樂天/地下街出口搭計程車（車程僅 5~8 分鐘，車資約 5,000 韓元）。全平坦綠地公園，小孩醒來後在大型戶外沙坑與新穎遊樂設施狂跑放電。" 
+                    },
+                    { 
+                        time: "17:30 - 19:30", 
+                        title: "晚餐：味贊王鹽烤肉 (맛찬들 왕소금구이) / 西面在地美食 🥩", 
+                        isDining: true, 
+                        options: [
+                            { name: "味贊王鹽烤肉 西面店", info: "首選：搭計程車返回西面（車程約 8 分鐘）。專人桌邊代烤，安全省力。建議 17:30 前抵達避免帶幼兒排隊。", dish: "熟成豬五花 / 豬頸肉", addr: "맛찬들왕소금구이 서면점", isPrimary: true },
+                            { name: "田浦道具街特色定食 / 韓式炸雞", info: "備案：若不吃烤肉，可至田浦選物街享用溫和定食或外帶韓式炸雞回房。", dish: "韓式定食 / 無骨炸雞", addr: "Jeonpo Cafe Street", isPrimary: false }
+                        ]
+                    },
+                    { 
+                        time: "19:30 ~", 
+                        title: "🏠 正式入住：西面田浦 Angel 房源 (休息放鬆)", 
+                        addr: "Angel Stay Jeonpo", 
+                        stay: "Overnight", 
+                        guide: "【房源收尾】返回 Angel 房源辦理正式入住，享受 35 坪獨棟大空間與獨樂露臺，讓全家獲得充沛休息。" 
+                    }
                 ]
             },
             7: {
-                title: "D7 (11/06 五): 巨濟島自然風光專車一日遊",
+                title: "金井山賞楓/纜車雙支線 ➔ 購物/公園雙支線 ➔ 回民宿",
                 nodes: [
-                    { time: "08:00 - 10:30", title: "專車接送 ➔ 跨海前往巨濟島 🚌", guide: "搭乘專車，全家可以在車上舒適補眠[cite: 2]。", lat: 34.8806, lng: 128.6211 },
-                    { time: "10:30 - 13:00", title: "搭渡輪遊覽 外島天堂島 (Oedo Botania) 🌺", addr: "Oedo Botania", koreanAddr: "외도 보타니아", guide: "海上歐式植物園步道鋪設完善[cite: 2]。", lat: 34.7963, lng: 128.7042 },
-                    HOME_ANGEL
+                    {
+                        isDay7AMSelector: true,
+                        title: "🔀 請選擇 D7 上午賞楓/纜車行程支線"
+                    },
+                    // ===== 上午支線 1：【梵魚寺輕鬆賞楓】 =====
+                    {
+                        branchAM: "AM1",
+                        time: "09:30 - 10:00",
+                        title: "【上午支線 1】西面 Angel 房源 ➔ 梵魚寺 (Beomeosa) 🚖",
+                        addr: "Beomeosa Temple",
+                        stay: "30min",
+                        guide: "搭乘計程車直達梵魚寺入口平路（車程約 25 分鐘，車資約 16,000 韓元）。"
+                    },
+                    {
+                        branchAM: "AM1",
+                        time: "10:00 - 12:30",
+                        title: "【上午支線 1】梵魚寺楓葉隧道與古寺漫步 🍁",
+                        addr: "Beomeosa Temple",
+                        stay: "2.5hr",
+                        guide: "【賞楓重點】釜山第一賞楓名勝！寺前楓葉隧道極為壯麗，步道平緩好走，非常適合全家帶推車輕鬆漫步。"
+                    },
+                    {
+                        branchAM: "AM1",
+                        time: "12:30 - 14:00",
+                        title: "【上午支線 1】午餐：梵魚寺山腳在地韓定食/山菜定食 🍴",
+                        isDining: true,
+                        options: [
+                            { name: "梵魚寺山腳韓定食 / 山菜拌飯", info: "首選：享用溫和不辣的韓式山菜定食或高湯鴨肉飯，湯頭清甜適合幼兒。", dish: "韓式山菜定食 / 高湯鴨肉", addr: "Beomeosa Temple", isPrimary: true },
+                            { name: "梵魚寺周邊豆腐鍋定食", info: "備案：現做手工嫩豆腐與清淡高湯，小菜豐富。", dish: "純豆腐定食", addr: "Beomeosa Temple", isPrimary: false }
+                        ]
+                    },
+
+                    // ===== 上午支線 2：【金剛公園纜車 + 梵魚寺大滿配】 =====
+                    {
+                        branchAM: "AM2",
+                        time: "09:30 - 10:00",
+                        title: "【上午支線 2】西面 Angel 房源 ➔ 金剛公園纜車站 🚖",
+                        addr: "Geumgang Park Cable Car",
+                        stay: "30min",
+                        guide: "搭乘計程車直達金剛公園門口（車程約 20 分鐘，直達纜車入口）。"
+                    },
+                    {
+                        branchAM: "AM2",
+                        time: "10:00 - 11:30",
+                        title: "【上午支線 2】金井山城高空纜車 (Geumgang Park Cable Car) 🚠",
+                        addr: "Geumgang Park Cable Car",
+                        stay: "1.5hr",
+                        guide: "【高空纜車】搭乘懷舊雙軌纜車穿梭於金井山奇岩與紅葉樹海之間，登頂俯瞰全釜山西北區市景，滿足高空視野需求！"
+                    },
+                    {
+                        branchAM: "AM2",
+                        time: "11:30 - 12:00",
+                        title: "【上午支線 2】短程移動：金剛公園 ➔ 梵魚寺 🚖",
+                        addr: "Beomeosa Temple",
+                        stay: "20min",
+                        guide: "搭乘計程車前往梵魚寺（車程約 15 分鐘）。"
+                    },
+                    {
+                        branchAM: "AM2",
+                        time: "12:00 - 13:30",
+                        title: "【上午支線 2】梵魚寺楓葉隧道 ➔ 山菜韓定食午餐 🍁",
+                        isDining: true,
+                        options: [
+                            { name: "梵魚寺山腳在地韓定食", info: "首選：賞楓後於山腳享用溫和不辣的山菜定食或高湯鴨肉飯。", dish: "韓式山菜定食", addr: "Beomeosa Temple", isPrimary: true },
+                            { name: "金剛公園周邊鴨肉定食", info: "備案：東萊周邊老字號高湯鴨肉飯與韓式蒸餃。", dish: "高湯鴨肉飯", addr: "Geumgang Park", isPrimary: false }
+                        ]
+                    },
+
+                    {
+                        isDay7PMSelector: true,
+                        title: "🔀 請選擇 D7 下午行程支線（返回西面區域）"
+                    },
+
+                    // ===== 下午支線 1：【最後大補貨行程】 =====
+                    {
+                        branchPM: "PM1",
+                        time: "14:00 - 14:30",
+                        title: "【下午支線 1】移動：梵魚寺 ➔ 西面 Homeplus 超市 / 樂天百貨 🚖",
+                        addr: "Homeplus Asiad",
+                        stay: "30min",
+                        guide: "搭乘計程車直達西面商圈（車程約 25 分鐘，小孩可以在車上順暢午睡）。"
+                    },
+                    {
+                        branchPM: "PM1",
+                        time: "14:30 - 17:30",
+                        title: "【下午支線 1】🛍️ 返台前最後大補貨：Homeplus 量販超市 / 樂天百貨總店",
+                        addr: "Homeplus Asiad",
+                        stay: "3hr",
+                        guide: "【最後採買】1. <b>Homeplus / Emart 超市</b>：採買韓式零食、泡麵、海苔、伴手禮（現場可退稅）。<br>2. <b>樂天百貨總店 5F</b>：頂級育嬰室備用，採買潮牌與韓系童裝。"
+                    },
+
+                    // ===== 下午支線 2：【釜山市民公園放電行程】 =====
+                    {
+                        branchPM: "PM2",
+                        time: "14:00 - 14:30",
+                        title: "【下午支線 2】移動：梵魚寺 ➔ 釜山市民公園 (Busan Citizens Park) 🚖",
+                        addr: "Busan Citizens Park",
+                        stay: "30min",
+                        guide: "搭乘計程車直達釜山市民公園（車程約 25 分鐘，小孩在車上記續午睡）。"
+                    },
+                    {
+                        branchPM: "PM2",
+                        time: "14:30 - 17:30",
+                        title: "【下午支線 2】🌳 釜山市民公園 親子狂歡放電",
+                        addr: "Busan Citizens Park",
+                        stay: "3hr",
+                        guide: "【公園放電】100% 全平坦綠地公園，小孩醒來後在大型戶外沙坑、新穎遊樂設施狂跑放電，欣賞黃昏與銀杏大道景致。"
+                    },
+
+                    // ===== 公用晚餐（西面區域 5 大指標餐廳選一） =====
+                    {
+                        time: "17:30 - 19:30",
+                        title: "晚餐：西面在地指標美食巡禮 (5 選 1) 🍜",
+                        isDining: true,
+                        options: [
+                            { name: "西面 橋村炸雞 (Kyochon Chicken)", info: "首選：現炸蜂蜜系列無骨炸雞，甜甜酥脆完全不辣，大人小孩皆喜愛。", dish: "蜂蜜無骨炸雞 / 現炸薯條", addr: "교촌치킨 서면점", isPrimary: true },
+                            { name: "松亭三代豬肉湯飯 (송정삼대돼지국밥)", info: "備案一：70年老字號，清甜大骨高湯與軟嫩白切肉，適合幼兒泡飯。", dish: "豬肉湯飯 / 白切肉定食", addr: "송정삼대돼지국밥", isPrimary: false },
+                            { name: "味贊王鹽烤肉 西面店 (맛찬들)", info: "備案二：3.5cm 超厚切豬五花，全程專人桌邊代烤，附蒸蛋與不辣小菜。", dish: "熟成厚切豬五花", addr: "맛찬들왕소금구이 서면점", isPrimary: false },
+                            { name: "機張刀削麵 (기장칼국수)", info: "備案三：米其林推薦平價手打麵，請店家去除辣醬，搭配不辣薄皮蒸餃。", dish: "手打刀削麵 / 海鮮蒸餃", addr: "기장칼국수", isPrimary: false },
+                            { name: "嶺南麵屋 (영남밀면)", info: "備案四：釜山名物水小麥麵，湯頭清涼甘甜，搭配熱牛肉湯麵與現蒸肉餃。", dish: "水小麥麵 / 熱湯麵", addr: "영남밀면", isPrimary: false }
+                        ]
+                    },
+
+                    // ===== 一鍵回民宿收尾卡片 =====
+                    {
+                        time: "19:30 ~",
+                        title: "🏠 一鍵回民宿：返回西面 Angel 房源打包戰利品",
+                        addr: "Angel Stay Jeonpo",
+                        stay: "Overnight",
+                        guide: "【房源收尾】晚餐後漫步 3~5 分鐘返回 Angel 房源，享受最後一晚的大空間與獨棟露臺，整理 8 天來的戰利品與托運行李，準備明日返台。"
+                    }
                 ]
             },
             8: {
-                title: "D8 (11/07 六): 收拾戰利品、依依不捨返台 ✈️",
+                title: "收拾戰利品、依依不捨返台 ✈️",
                 nodes: [
-                    { time: "08:00 - 08:40", title: "Angel 退房 ➔ 直達金海國際機場 (I)", addr: "Gimhae International Airport", koreanAddr: "김해국제공항", guide: "搭乘大型計程車直達機場[cite: 2]。", lat: 35.1795, lng: 128.9382 },
-                    { time: "11:50 - 13:30", title: "搭乘華航 CI189 返抵台北 🛫", guide: "11:50 金海起飛 ➔ 13:30 順利返抵台北[cite: 2, 14]！" }
+                    { time: "08:00 - 08:40", title: "Angel 退房 ➔ 包車直達金海國際機場 (I)", addr: "Gimhae International Airport", stay: "40min", guide: "搭乘大型計程車直達機場，車程約 35 分鐘。" },
+                    { time: "08:40 - 11:50", title: "機場辦理託運、退稅與免稅店補貨 🛄", addr: "Gimhae International Airport", stay: "3hr", guide: "辦理行李與推車託運登記，最後免稅店採買伴手禮。" },
+                    { time: "11:50 - 13:30", title: "搭乘華航 CI189 班機返抵台北 🛫", stay: "N/A", guide: "11:50 金海起飛 ➔ 13:30 順利返抵桃園機場 T1，結束美好行程！" }
                 ]
             }
         };
 
-        // 媽媽獨自帶娃模式行程 (D1 - D3)
+        // 媽媽 (HaoChun + MuTong) 晚一天出發專屬前三天行程 (D1 ~ D3)
         const momTripData = {
             1: {
-                title: "D1 (10/31 六): 媽媽參加證照考試 & 家中準備",
+                title: "【媽媽在家整備日】台灣考試 & 托育準備",
                 nodes: [
-                    { time: "全天", title: "參加證照考試 ➔ 考畢返家整理行李 📚", guide: "<b>【媽媽應考日】</b>安心完成考試！爸爸與大部隊已飛抵釜山[cite: 2]。確認明日 11/01 CI188 機票[cite: 2, 14]。" }
+                    { time: "全天", title: "Liang HaoChun 於台灣參加證照考試 📝", stay: "N/A", guide: "媽媽今日在台灣專心考試，大部隊已先行前往釜山。請整理明天與 MuTong (1歲) 登機包包、護照與奶粉。" },
+                    { time: "18:00 - 21:00", title: "確認 CI188 機票與預先辦理網路報到 📲", stay: "N/A", guide: "請確認 11/01 CI188 機票(07:40起飛)，並確保嬰兒推車已標註為登機門託運 (Gate Check)。" }
                 ]
             },
             2: {
-                title: "D2 (11/01 日): 媽媽帶娃獨自飛抵釜山 ➔ 直達會合",
+                title: "【媽媽飛抵會合日】獨自帶娃出關 ➔ 白淺灘感人會合",
                 nodes: [
-                    { time: "07:40 - 10:50", title: "搭乘 CI188 班機獨自飛往釜山 ✈️", guide: "桃園 T1 出發。推車推至登機門辦理機艙口託運[cite: 2]。", lat: 35.1795, lng: 128.9382 },
-                    { 
-                        time: "10:50 - 11:30", 
-                        title: "金海機場 (PUS) 獨家出關指南 (必看！)", 
-                        guide: `
-                        <div class="mom-guide-box">
-                            <strong>🚨 媽媽帶娃出關 SOP：</strong><br>
-                            1. 空橋口領取推車 ➔ 2. 入境走 Priority 通道 ➔ 3. GATE 3 搭計程車[cite: 2]。
-                        </div>` 
-                    },
-                    { 
-                        time: "11:30 - 12:30", 
-                        title: "一鍵搭乘計程車直達白淺灘會合點 🚕", 
-                        guide: "搭乘 Jumbo Taxi，出示韓文位址[cite: 2]。",
-                        koreanAddr: "영도 흰여울문화마을로 가주세요.",
-                        addr: "Huinnyeoul Culture Village", lat: 35.0786, lng: 129.0445
-                    },
-                    { 
-                        time: "12:30 ~", 
-                        title: "與大部隊感人會合 🤝 ➔ 開啟團圓行程", 
-                        guide: "抵達影島白淺灘，與老公孩子會合享用午餐[cite: 2]！" 
-                    },
-                    HOME_DALAN
+                    { time: "07:40 - 10:50", title: "搭乘華航 CI188 班機 (HaoChun + MuTong) ✈️", stay: "N/A", guide: "【獨自帶娃登機】桃園 T1 出發 ➔ 10:50 抵達金海機場 I。推車使用至機艙門，下機空橋第一時間領取。" },
+                    { time: "10:50 - 11:40", title: "快速通關 ➔ 出 Gate 3 搭計程車 🚖", stay: "N/A", guide: "走家庭 Priority 通關通道！出機場 Gate 3 叫 Kakao T Venti 直達影島白淺灘會合。" },
+                    { trans: [{ type: "🚖", text: "<b>直達會合點 (影島白淺灘文化村)</b><br>請將此韓文位址直接展示給司機：<br><b>영도 흰여울문화마을로 가주세요.</b>", addr: "Huinnyeoul Culture Village" }] },
+                    { time: "12:30 - 14:00", title: "抵達白淺灘 ➔ 與大部隊合流享用午餐 💖", addr: "Huinnyeoul Culture Village", stay: "1.5hr", guide: "成功在大部隊抵達白淺灘時會合！全家大團圓，享用溫和海鮮麵與熱高湯。" },
+                    { time: "14:00 - 18:30", title: "逆向松島纜車 ➔ 南浦洞商圈散策", addr: "BIFF Square", stay: "4.5hr", guide: "搭乘免排隊逆向水晶纜車，隨後前往南浦洞吃黑糖堅果糖餅與逛街。" },
+                    { time: "18:30 - 20:00", title: "晚餐：富平豬腳一條街 🍖", isDining: true, options: [
+                        { name: "漢陽豬腳 (한양족발)", info: "首選：原味豬腳薄切不辣，全家歡慶團聚第一餐！", dish: "原味豬腳", addr: "한양족발", isPrimary: true }
+                    ]}
                 ]
             },
             3: {
-                title: "D3 (11/02 一): 媽媽已回歸大部隊 ➔ 賞楓與百貨",
+                title: "【大部隊完全合流】賞楓與新世界百貨巡禮",
                 nodes: [
-                    { time: "全天", title: "回歸大部隊共用行程 ❤️", guide: "與大團隊一起走兒童大公園賞楓與 Centum City 百貨行程[cite: 2]。" },
-                    HOME_DALAN
+                    { time: "09:00 - 12:00", title: "釜山兒童大公園 聖知谷水源地賞楓 🍁", addr: "Busan Children's Grand Park", stay: "3hr", guide: "媽媽已完全歸隊，全家在平坦木棧步道享受賞楓與森林負離子。" },
+                    { time: "12:30 - 16:30", title: "新世界百貨 Centum City 店 (放電與購物) 🛍️", addr: "Shinsegae Centum City", stay: "4hr", guide: "享用美食街午餐，帶小孩去 9 樓恐龍公園放電與使用頂級育嬰室。" },
+                    { time: "16:30 - 20:00", title: "廣安里沙灘散步 ➔ 廣安大橋夜景晚餐 🌉", addr: "Gwangalli Beach", stay: "3.5hr", guide: "欣賞落日餘暉與夜景點燈，享用新鮮海鮮晚餐。" }
                 ]
             }
         };
 
-        // 初始化 Leaflet 地圖 (具備 Try-Catch 防爆保護)
-        function initMap() {
-            try {
-                if (typeof L !== 'undefined') {
-                    map = L.map('realtime-map', { zoomControl: false }).setView([35.1612, 129.1595], 11);
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                        maxZoom: 18,
-                        attribution: '© OpenStreetMap'
-                    }).addTo(map);
-                }
-            } catch (e) {
-                console.log("地圖初始化跳過或受阻:", e);
-            }
-        }
-
-        // 更新地圖標註點
-        function updateMapMarkers(dayNodes) {
-            if (!map || typeof L === 'undefined') return;
-            try {
-                mapMarkers.forEach(m => map.removeLayer(m));
-                mapMarkers = [];
-
-                let bounds = [];
-                dayNodes.forEach(node => {
-                    if (node.lat && node.lng) {
-                        const marker = L.marker([node.lat, node.lng]).addTo(map);
-                        marker.bindPopup(`<b>${node.title || node.name}</b>`);
-                        mapMarkers.push(marker);
-                        bounds.push([node.lat, node.lng]);
-                    }
-                    if (node.options) {
-                        node.options.forEach(opt => {
-                            if (opt.lat && opt.lng) {
-                                const marker = L.marker([opt.lat, opt.lng]).addTo(map);
-                                marker.bindPopup(`<b>${opt.name}</b>`);
-                                mapMarkers.push(marker);
-                                bounds.push([opt.lat, opt.lng]);
-                            }
-                        });
-                    }
-                });
-
-                if (bounds.length > 0) {
-                    map.fitBounds(bounds, { padding: [20, 20] });
-                }
-            } catch (e) {
-                console.log("更新地圖標註點錯誤:", e);
-            }
-        }
-
-        // 使用者 GPS 即時定位
-        function locateUser() {
-            if (!navigator.geolocation) {
-                alert("您的裝置不支援 GPS 定位功能");
-                return;
-            }
-            navigator.geolocation.getCurrentPosition(pos => {
-                const lat = pos.coords.latitude;
-                const lng = pos.coords.longitude;
-
-                if (map) {
-                    if (userMarker) map.removeLayer(userMarker);
-                    if (userCircle) map.removeLayer(userCircle);
-
-                    userMarker = L.circleMarker([lat, lng], {
-                        color: '#0A84FF',
-                        fillColor: '#0A84FF',
-                        fillOpacity: 0.9,
-                        radius: 8
-                    }).addTo(map).bindPopup("📍 您目前的位置").openPopup();
-
-                    userCircle = L.circle([lat, lng], {
-                        radius: pos.coords.accuracy,
-                        color: '#0A84FF',
-                        opacity: 0.15
-                    }).addTo(map);
-
-                    map.setView([lat, lng], 14);
-                }
-            }, () => {
-                alert("無法獲取您的位置，請確認定位權限已開啟");
-            });
-        }
-
-        function switchTripMode(mode) {
+        function switchMode(mode) {
             currentMode = mode;
-            document.getElementById('btnMainMode').className = mode === 'main' ? 'mode-btn active-main' : 'mode-btn';
-            document.getElementById('btnMomMode').className = mode === 'mom' ? 'mode-btn active-mom' : 'mode-btn';
-            document.body.className = mode === 'mom' ? 'mom-theme' : '';
-            document.getElementById('appMainHeader').innerText = mode === 'mom' ? "MOM'S SOLO ARRIVAL" : "BUSAN TRAVEL";
+            document.getElementById('btnNormalMode').className = 'mode-btn' + (mode === 'normal' ? ' active' : '');
+            document.getElementById('btnMomMode').className = 'mode-btn' + (mode === 'mom' ? ' active' : '');
+            
+            const titleEl = document.getElementById('appTitle');
+            const subTitleEl = document.getElementById('appSubTitle');
+            if (mode === 'mom') {
+                titleEl.innerText = "HAO CHUN MODE";
+                subTitleEl.innerText = "👩‍👦 媽媽(HaoChun+MuTong) 獨自出發會合導航 V13.0";
+            } else {
+                titleEl.innerText = "BUSAN TRAVEL";
+                subTitleEl.innerText = "🇰🇷 2026 釜山 8 天 7 夜親子自由行 V13.0";
+            }
 
-            render(currentDay);
+            renderDayButtons();
+            render(1);
+        }
+
+        function renderDayButtons() {
+            const nav = document.getElementById('dayNav');
+            const maxDays = currentMode === 'mom' ? 3 : 8;
+            let html = '';
+            for (let i = 1; i <= maxDays; i++) {
+                html += `<button onclick="render(${i})" class="${i === currentDay ? 'active' : ''}">${currentMode === 'mom' ? 'M-D' + i : 'D' + i}</button>`;
+            }
+            nav.innerHTML = html;
+        }
+
+        let currentDay2Branch = 'A';    // Day 2 纜車支線
+        let currentDay3Branch = 'A';    // Day 3 百貨支線
+        let currentDay7AMBranch = 'AM1'; // Day 7 上午支線
+        let currentDay7PMBranch = 'PM1'; // Day 7 下午支線
+
+        function selectDay2Branch(branch) {
+            currentDay2Branch = branch;
+            render(2);
+        }
+
+        function selectDay3Branch(branch) {
+            currentDay3Branch = branch;
+            render(3);
+        }
+
+        function selectDay7Branch(type, branch) {
+            if (type === 'AM') currentDay7AMBranch = branch;
+            if (type === 'PM') currentDay7PMBranch = branch;
+            render(7);
         }
 
         function render(day) {
@@ -702,130 +1603,182 @@
             const btns = document.querySelectorAll('.day-nav button');
             btns.forEach((b, i) => b.className = (i + 1 === day ? 'active' : ''));
 
-            let activeData;
-            if (day <= 3) {
-                activeData = (currentMode === 'mom') ? momTripData[day] : mainTripData[day];
-            } else {
-                activeData = mainTripData[day];
-            }
+            const dataSource = currentMode === 'mom' ? momTripData : normalTripData;
+            const dayData = dataSource[day] || { title: `D${day} 行程`, nodes: [] };
 
             const titleContainer = document.getElementById('dayTitleContainer');
-            titleContainer.innerHTML = `<h2 class="day-main-title">${activeData.title}</h2>`;
+            titleContainer.innerHTML = `<h2 class="day-main-title">${currentMode === 'mom' ? 'Mom Day ' : 'Day '}${day} \vert{}${dayData.title}</h2>`;
 
             const container = document.getElementById('timelineContent');
             let html = ``;
             
-            activeData.nodes.forEach(n => {
-                if (n.trans) {
-                    html += `<div class="timeline-node">
-                        <div class="trans-card">
-                            ${n.trans.map(t => `
-                                <div style="font-size:12px; color:#333;">
-                                    ${t.type}${t.text}
-                                    <div class="map-btn-group">
-                                        <button class="map-btn google" onclick="openGoogleMap('${t.addr}')">🗺️ Google</button>
-                                        <button class="map-btn naver" onclick="openNaverMap('${t.koreanAddr || t.addr}')">🧭 Naver Map</button>
+            if (dayData.nodes) {
+                dayData.nodes.forEach(n => {
+                    // 1. 各天支線卡片過濾條件
+                    if (day === 2 && n.branch && n.branch !== currentDay2Branch) return;
+                    if (day === 3 && n.branch && n.branch !== currentDay3Branch) return;
+                    
+                    // Day 7 專屬：嚴格區分上午 (branchAM) 與下午 (branchPM)
+                    if (day === 7) {
+                        if (n.branchAM && n.branchAM !== currentDay7AMBranch) return;
+                        if (n.branchPM && n.branchPM !== currentDay7PMBranch) return;
+                    }
+
+                    // 2. 渲染 UI Selector (按天數與類型精準判斷)
+                    if (n.isDay3BranchSelector) {
+                        // Day 3 中午支線選擇器
+                        html += `
+                        <div class="timeline-node" style="margin: 15px 0 25px;">
+                            <div class="node-dot" style="border-color:var(--primary); background:var(--primary);"></div>
+                            <div class="card" style="background: rgba(10, 132, 255, 0.08); border: 1.5px solid rgba(10, 132, 255, 0.3);">
+                                <div style="font-weight:800; font-size:14px; color:var(--text-dark); margin-bottom:8px;">${n.title}</div>
+                                <div style="display:flex; gap:8px;">
+                                    <button onclick="selectDay3Branch('A')" style="flex:1; padding:10px; border-radius:12px; border:none; font-weight:800; font-size:12px; cursor:pointer; transition:all 0.3s; ${currentDay3Branch === 'A' ? 'background:var(--primary); color:#fff; box-shadow:0 4px 12px rgba(10,132,255,0.3);' : 'background:rgba(255,255,255,0.8); color:var(--text-dark);'}">
+                                        🦖 支線 A：新世界 Centum City (首選)
+                                    </button>
+                                    <button onclick="selectDay3Branch('B')" style="flex:1; padding:10px; border-radius:12px; border:none; font-weight:800; font-size:12px; cursor:pointer; transition:all 0.3s; ${currentDay3Branch === 'B' ? 'background:var(--primary); color:#fff; box-shadow:0 4px 12px rgba(10,132,255,0.3);' : 'background:rgba(255,255,255,0.8); color:var(--text-dark);'}">
+                                        🏬 支線 B：西面樂天總店 (車程最短)
+                                    </button>
+                                </div>
+                            </div>
+                        </div>`;
+                    } else if (n.isBranchSelector || n.isDay2BranchSelector) {
+                        // Day 2 纜車支線選擇器
+                        html += `
+                        <div class="timeline-node" style="margin: 15px 0 25px;">
+                            <div class="node-dot" style="border-color:var(--accent); background:var(--accent);"></div>
+                            <div class="card" style="background: rgba(255, 149, 0, 0.08); border: 1.5px solid rgba(255, 149, 0, 0.3);">
+                                <div style="font-weight:800; font-size:14px; color:var(--text-dark); margin-bottom:8px;">${n.title}</div>
+                                <div style="display:flex; gap:8px;">
+                                    <button onclick="selectDay2Branch('A')" style="flex:1; padding:10px; border-radius:12px; border:none; font-weight:800; font-size:12px; cursor:pointer; transition:all 0.3s; ${currentDay2Branch === 'A' ? 'background:var(--accent); color:#fff; box-shadow:0 4px 12px rgba(255,149,0,0.3);' : 'background:rgba(255,255,255,0.8); color:var(--text-dark);'}">
+                                        ⚡ 支線 A：逆向免排隊纜車 (首選)
+                                    </button>
+                                    <button onclick="selectDay2Branch('B')" style="flex:1; padding:10px; border-radius:12px; border:none; font-weight:800; font-size:12px; cursor:pointer; transition:all 0.3s; ${currentDay2Branch === 'B' ? 'background:var(--accent); color:#fff; box-shadow:0 4px 12px rgba(255,149,0,0.3);' : 'background:rgba(255,255,255,0.8); color:var(--text-dark);'}">
+                                        ⛵ 支線 B：順向纜車
+                                    </button>
+                                </div>
+                            </div>
+                        </div>`;
+                    } else if (n.isDay7AMSelector) {
+                        // Day 7 上午支線選擇器
+                        html += `
+                        <div class="timeline-node" style="margin: 15px 0 25px;">
+                            <div class="node-dot" style="border-color:var(--primary); background:var(--primary);"></div>
+                            <div class="card" style="background: rgba(10, 132, 255, 0.08); border: 1.5px solid rgba(10, 132, 255, 0.3);">
+                                <div style="font-weight:800; font-size:14px; color:var(--text-dark); margin-bottom:8px;">${n.title}</div>
+                                <div style="display:flex; gap:8px;">
+                                    <button onclick="selectDay7Branch('AM', 'AM1')" style="flex:1; padding:10px; border-radius:12px; border:none; font-weight:800; font-size:11px; cursor:pointer; transition:all 0.3s; ${currentDay7AMBranch === 'AM1' ? 'background:var(--primary); color:#fff; box-shadow:0 4px 12px rgba(10,132,255,0.3);' : 'background:rgba(255,255,255,0.8); color:var(--text-dark);'}">
+                                        🍁 支線 1：梵魚寺輕鬆賞楓
+                                    </button>
+                                    <button onclick="selectDay7Branch('AM', 'AM2')" style="flex:1; padding:10px; border-radius:12px; border:none; font-weight:800; font-size:11px; cursor:pointer; transition:all 0.3s; ${currentDay7AMBranch === 'AM2' ? 'background:var(--primary); color:#fff; box-shadow:0 4px 12px rgba(10,132,255,0.3);' : 'background:rgba(255,255,255,0.8); color:var(--text-dark);'}">
+                                        🚠 支線 2：金剛公園纜車大滿配
+                                    </button>
+                                </div>
+                            </div>
+                        </div>`;
+                    } else if (n.isDay7PMSelector) {
+                        // Day 7 下午支線選擇器
+                        html += `
+                        <div class="timeline-node" style="margin: 15px 0 25px;">
+                            <div class="node-dot" style="border-color:var(--secondary); background:var(--secondary);"></div>
+                            <div class="card" style="background: rgba(52, 199, 89, 0.08); border: 1.5px solid rgba(52, 199, 89, 0.3);">
+                                <div style="font-weight:800; font-size:14px; color:var(--text-dark); margin-bottom:8px;">${n.title}</div>
+                                <div style="display:flex; gap:8px;">
+                                    <button onclick="selectDay7Branch('PM', 'PM1')" style="flex:1; padding:10px; border-radius:12px; border:none; font-weight:800; font-size:11px; cursor:pointer; transition:all 0.3s; ${currentDay7PMBranch === 'PM1' ? 'background:var(--secondary); color:#fff; box-shadow:0 4px 12px rgba(52,199,89,0.3);' : 'background:rgba(255,255,255,0.8); color:var(--text-dark);'}">
+                                        🛍️ 支線 1：最後大補貨
+                                    </button>
+                                    <button onclick="selectDay7Branch('PM', 'PM2')" style="flex:1; padding:10px; border-radius:12px; border:none; font-weight:800; font-size:11px; cursor:pointer; transition:all 0.3s; ${currentDay7PMBranch === 'PM2' ? 'background:var(--secondary); color:#fff; box-shadow:0 4px 12px rgba(52,199,89,0.3);' : 'background:rgba(255,255,255,0.8); color:var(--text-dark);'}">
+                                        🌳 支線 2：市民公園狂歡放電
+                                    </button>
+                                </div>
+                            </div>
+                        </div>`;
+                    } else if (n.trans) {
+                        // 交通移動分隔區
+                        html += `<div class="trans-divider">
+                            <div class="trans-card">
+                                ${n.trans.map(t => `
+                                    <div class="trans-row">
+                                        <div class="trans-icon">${t.type}</div>
+                                        <div class="trans-text">
+                                            ${t.text}
+                                            <div class="map-btn-group">
+                                                <button class="map-btn nmap" onclick="openMap('${t.addr}', 'nmap')">🧭 Nmap 導航</button>
+                                                <button class="map-btn" onclick="openMap('${t.addr}', 'gmap')">🗺️ Google 地圖</button>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>`;
-                } else if (n.isDining) {
-                    html += `
-                    <div class="timeline-node">
-                        <div class="node-dot" style="border-color:var(--accent);"></div>
-                        <span class="node-time">🍴 美食方案 (${n.time || '用餐'})</span>
-                        <div class="dining-wrap">
-                            ${n.options.map(o => `
-                                <div class="dining-card ${o.isPrimary ? 'primary-choice' : ''}">
-                                    ${o.isPrimary ? '<div class="primary-tag">★ 推薦首選</div>' : '<div class="backup-tag">備案選擇</div>'}
-                                    <strong style="font-size:13px; display:block; margin-bottom:2px;">${o.name}</strong>
-                                    <small style="color:var(--accent); font-weight:700; display:block; margin-bottom:3px;">🍲 招牌: ${o.dish}</small>
-                                    <small style="color:#555; display:block;">${o.info}</small>
-                                    <div class="map-btn-group">
-                                        <button class="map-btn google" onclick="openGoogleMap('${o.addr || o.name}')">🗺️ Google</button>
-                                        <button class="map-btn naver" onclick="openNaverMap('${o.koreanAddr || o.addr || o.name}')">🧭 Naver Map</button>
+                                `).join('')}
+                            </div>
+                        </div>`;
+                    } else if (n.isDining) {
+                        // 美食橫向滾動選擇區
+                        html += `
+                        <div class="timeline-node">
+                            <div class="node-dot" style="border-color:var(--accent); box-shadow: 0 0 0 4px rgba(255, 149, 0, 0.2);"></div>
+                            <span class="node-time">🍴 美食方案 (${n.time || '用餐'})</span>
+                            <div class="dining-wrap">
+                                ${n.options.map(o => `
+                                    <div class="dining-card ${o.isPrimary ? 'primary-choice' : ''}">
+                                        ${o.isPrimary ? '<div class="primary-tag">★ 本日推薦首選</div>' : '<div class="backup-tag">⚡ 備案選項</div>'}
+                                        <strong>${o.name}</strong><br><small style="color:#555">${o.info}</small>
+                                        <div class="map-btn-group">
+                                            <button class="map-btn nmap" onclick="openMap('${o.addr || o.name}', 'nmap')">🧭 Nmap</button>
+                                            <button class="map-btn" onclick="openMap('${o.addr || o.name}', 'gmap')">🗺️ Google</button>
+                                        </div>
+                                        <div class="menu-pill" style="${o.isPrimary ? 'background:var(--accent); color:#fff;' : ''}">✨ 招牌：${o.dish}</div>
                                     </div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>`;
-                } else {
-                    html += `
-                    <div class="timeline-node">
-                        <div class="node-dot"></div>
-                        <span class="node-time">${n.time}</span>
-                        <div class="card ${n.isHome ? 'home-card' : ''}">
-                            <div style="font-weight:bold; font-size:14px;">${n.title}</div>
-                            ${n.guide ? `<div class="guide-box">${n.guide}</div>` : ''}
-                            ${n.koreanAddr ? `
-                                <div class="mom-guide-box" onclick="copy('${n.koreanAddr}')">
-                                    🚕 <b>給計程車司機看 (點擊複製)：</b><br>
-                                    "${n.koreanAddr}"
-                                </div>
-                            ` : ''}
-                            ${(n.addr || n.koreanAddr) ? `
+                                `).join('')}
+                            </div>
+                        </div>`;
+                    } else {
+                        // 標準行程節點卡片
+                        html += `
+                        <div class="timeline-node">
+                            <div class="node-dot"></div>
+                            <span class="node-time">${n.time}</span>
+                            <div class="card">
+                                <div style="font-weight:bold; font-size:16px;">${n.title}</div>
+                                ${n.guide ? `<div class="guide-box">${n.guide}</div>` : ''}
+                                ${n.addr ? `
                                 <div class="map-btn-group">
-                                    <button class="map-btn google" onclick="openGoogleMap('${n.addr || n.title}')">🗺️ Google Maps</button>
-                                    <button class="map-btn naver" onclick="openNaverMap('${n.koreanAddr || n.addr || n.title}')">🧭 Naver ${n.isHome ? '一鍵回民宿' : 'Map'}</button>
-                                </div>
-                            ` : ''}
+                                    <button class="map-btn nmap" onclick="openMap('${n.addr}', 'nmap')">🧭 Naver Map (Nmap)</button>
+                                    <button class="map-btn" onclick="openMap('${n.addr}', 'gmap')">🗺 Google Maps</button>
+                                </div>` : ''}
+                            </div>
+                        </div>`;
+                    }
+                });
+            }
+
+            // 每一天結尾的「一鍵回民宿卡片」
+            if (currentMode === 'normal' && day < 8) {
+                const homeAddr = day <= 5 ? '11 Gunam-ro 41beon-gil, Haeundae, Busan' : '10 Dongcheon-ro 132beon-gil, Busanjin-gu, Busan';
+                const homeName = day <= 5 ? '🏠 回海雲台 Dal-An 房源' : '🏠 回西面 Angel 房源';
+                html += `
+                <div class="timeline-node" style="margin-top:20px;">
+                    <div class="node-dot" style="border-color:#ccc; background:#ccc; box-shadow:none;"></div>
+                    <span class="node-time">🛌 結束行程返回房源</span>
+                    <div class="card" style="background:rgba(255,255,255,0.4);">
+                        <div style="font-weight:bold; font-size:15px;">${homeName}</div>
+                        <div class="map-btn-group">
+                            <button class="map-btn nmap" onclick="openMap('${homeAddr}', 'nmap')">🧭 Nmap 回房源</button>
+                            <button class="map-btn" onclick="openMap('${homeAddr}', 'gmap')">🗺️ Google 回房源</button>
                         </div>
-                    </div>`;
-                }
-            });
+                    </div>
+                </div>`;
+            }
 
             container.innerHTML = html;
-            container.classList.remove('fade-slide-in');
-            void container.offsetWidth;
-            container.classList.add('fade-slide-in');
 
-            updateMapMarkers(activeData.nodes);
-        }
-
-        // 開啟時自動根據手機當前時間跳轉
-        function autoJumpToCurrentTime() {
-            const now = new Date();
-            const year = now.getFullYear();
-            const month = now.getMonth() + 1;
-            const date = now.getDate();
-
-            if (year === 2026 && month === 10 && date === 31) render(1);
-            else if (year === 2026 && month === 11 && date === 1) render(2);
-            else if (year === 2026 && month === 11 && date === 2) render(3);
-            else if (year === 2026 && month === 11 && date === 3) render(4);
-            else if (year === 2026 && month === 11 && date === 4) render(5);
-            else if (year === 2026 && month === 11 && date === 5) render(6);
-            else if (year === 2026 && month === 11 && date === 6) render(7);
-            else if (year === 2026 && month === 11 && date === 7) render(8);
-            else render(1);
-        }
-
-        function openGoogleMap(query) {
-            if (!query) return;
-            window.open("https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(query), '_blank');
-        }
-
-        function openNaverMap(query) {
-            if (!query) return;
-            const encodedQuery = encodeURIComponent(query);
-            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-
-            if (isIOS) {
-                const appUrl = `nmap://search?query=${encodedQuery}&appname=busan-family-2026.app`;
-                const webUrl = `https://m.map.naver.com/search2/search.naver?query=${encodedQuery}`;
-                const start = Date.now();
-                window.location.href = appUrl;
-                
-                setTimeout(function() {
-                    if (Date.now() - start < 2000) {
-                        window.open(webUrl, '_blank');
-                    }
-                }, 1500);
-            } else {
-                window.open(`https://m.map.naver.com/search2/search.naver?query=${encodedQuery}`, '_blank');
-            }
-        }
+    // 2. 判斷：如果是切換天數（點擊 D1~D8 Nav），回到頂部；如果是點擊「支線按鈕」，保持當前位置
+    if (window.lastRenderDay !== day) {
+        window.scrollTo(0, 0); // 切換天數才回到最上方
+        window.lastRenderDay = day;
+    } else {
+        window.scrollTo(0, currentScrollY); // 支線切換：精準還原滾動高度！
+    }
+}
 
         function copy(t) {
             if (!t) return;
@@ -833,6 +1786,36 @@
             const toast = document.getElementById('toast');
             toast.className = "show";
             setTimeout(() => toast.className = "", 2000);
+        }
+
+        /* 雙系統導航切換引擎 (iOS Naver App 優先調用) */
+        function openMap(query, type) {
+            if (!query) return;
+            const encodedQuery = encodeURIComponent(query);
+            
+            if (type === 'nmap') {
+                // iOS deep link 機制：嘗試開啟 Naver Map App，若無則開網頁版
+                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+                if (isIOS) {
+                    const appUrl = `nmap://search?query=${encodedQuery}&appname=busan-family-2026.app`;
+                    const webUrl = `https://m.map.naver.com/search2/search.naver?query=${encodedQuery}`;
+                    
+                    window.location.href = appUrl;
+                    setTimeout(() => {
+                        window.open(webUrl, '_blank');
+                    }, 1200);
+                } else {
+                    window.open(`https://m.map.naver.com/search2/search.naver?query=${encodedQuery}`, '_blank');
+                }
+            } else {
+                window.open(`https://www.google.com/maps/search/?api=1&query=${encodedQuery}`, '_blank');
+            }
+        }
+
+        function googleSearch(query) {
+            if (!query) return;
+            const url = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+            window.open(url, '_blank');
         }
 
         function showModal(id) {
@@ -845,30 +1828,85 @@
         function hideModal(id) { 
             const modal = document.getElementById(id + '-modal');
             modal.classList.remove('active');
-            setTimeout(() => modal.style.display = 'none', 350);
+            setTimeout(() => modal.style.display = 'none', 400);
         }
 
+        let foodMap = null;
+        let foodMapMarkers = [];
+
+        // 升級版 updateFoodModal：同時渲染卡片與在地圖上標註餐廳點位
         function updateFoodModal() {
+            // 1. 渲染餐廳卡片清單
             const container = document.getElementById('foodListContainer');
-            container.innerHTML = foodListData.map(r => `
-                <div class="card" style="margin-bottom: 10px; border-left:3.5px solid var(--primary-light);">
-                    <strong style="font-size:14px; display:block;">${r.name}</strong>
-                    <small style="color:var(--accent); font-weight:700; display:block; margin:2px 0;">🍲 招牌菜色: ${r.dish}</small>
-                    <small style="color:var(--text-muted); display:block; margin-bottom:4px;">${r.info}</small>
-                    <div class="map-btn-group">
-                        <button class="map-btn google" onclick="openGoogleMap('${r.addr || r.name}')">🗺️ Google</button>
-                        <button class="map-btn naver" onclick="openNaverMap('${r.koreanAddr || r.addr || r.name}')">🧭 Naver Map</button>
+            if (container) {
+                container.innerHTML = foodListData.map(r => `
+                    <div class="card" style="margin-bottom: 10px; border-left: 3.5px solid var(--primary-light);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+                            <strong style="font-size: 14px; color: var(--text-dark);">${r.name}</strong>
+                            <span style="font-size: 10px; background: rgba(10, 132, 255, 0.1); color: var(--primary); padding: 2px 6px; border-radius: 4px; font-weight: 700;">${r.region || '釜山'}</span>
+                        </div>
+                        <small style="color: var(--accent); font-weight: 700; display: block; margin-bottom: 3px;">🍲 招牌: ${r.dish}</small>
+                        <small style="color: var(--text-muted); display: block; margin-bottom: 6px; line-height: 1.4;">${r.info}</small>
+                        <div class="map-btn-group">
+                            <button class="map-btn google" onclick="openGoogleMap('${r.addr || r.name}')">🗺️ Google</button>
+                            <button class="map-btn naver" onclick="openNaverMap('${r.koreanAddr || r.addr || r.name}')">🧭 Naver Map</button>
+                        </div>
                     </div>
-                </div>
-            `).join('');
+                `).join('');
+            }
+
+            // 2. 初始化與更新 Modal 內的美食地圖
+        setTimeout(() => {
+            if (typeof L === 'undefined') return;
+
+            const mapEl = document.getElementById('food-map');
+            if (!mapEl) return;
+
+            if (!foodMap) {
+                foodMap = L.map('food-map', { zoomControl: false }).setView([35.1612, 129.1595], 11);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 18,
+                    attribution: '© OpenStreetMap'
+                }).addTo(foodMap);
+            }
+
+            // 清除舊地標
+            foodMapMarkers.forEach(m => foodMap.removeLayer(m));
+            foodMapMarkers = [];
+
+            let bounds = [];
+            foodListData.forEach(r => {
+                if (r.lat && r.lng) {
+                    const marker = L.marker([r.lat, r.lng]).addTo(foodMap);
+                    marker.bindPopup(`<b>${r.name}</b><br><small>${r.dish}</small>`);
+                    foodMapMarkers.push(marker);
+                    bounds.push([r.lat, r.lng]);
+                }
+            });
+
+            // 強制刷新尺寸與縮放視角
+            foodMap.invalidateSize();
+            if (bounds.length > 0) {
+                foodMap.fitBounds(bounds, { padding: [20, 20] });
+            }
+        }, 450); // 👈 調整為 450ms，等 Modal 完全展開後再載入圖資
         }
 
-        // 頁面載入安全執行
-        window.addEventListener('DOMContentLoaded', function() {
-            initMap();
-            switchTripMode('main');
-            autoJumpToCurrentTime();
-        });
+        /* 手勢切換與 iOS Modal 滑動關閉 */
+        let touchstartX = 0, touchendX = 0;
+        document.addEventListener('touchstart', e => { touchstartX = e.changedTouches[0].screenX; }, { passive: true });
+        document.addEventListener('touchend', e => {
+            touchendX = e.changedTouches[0].screenX;
+            if (e.target.closest('.day-nav, .dining-wrap, .modal')) return;
+            const deltaX = touchendX - touchstartX;
+            const maxDays = currentMode === 'mom' ? 3 : 8;
+            if (deltaX < -100 && currentDay < maxDays) render(currentDay + 1);
+            else if (deltaX > 100 && currentDay > 1) render(currentDay - 1);
+        }, { passive: true });
+
+        /* 初始化 */
+        renderDayButtons();
+        render(1);
     </script>
 </body>
 </html>
