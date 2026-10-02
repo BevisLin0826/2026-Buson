@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>2026 釜山親子 slow travel 導航助理 </title>
+    <title>2026 釜山親子 slow travel 導航助理 V13.0</title>
     <!-- Leaflet.js 地圖庫 (解決 L undefined 問題) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -220,7 +220,26 @@
             transform: scale(0.94);
             background: rgba(255, 255, 255, 0.8);
         }
+        /* 美食地圖定位按鈕與圖示 */
+        .food-map-container {
+            position: relative;
+        }
 
+        .locate-btn {
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            z-index: 1000;
+            background: #ffffff;
+            border: 1px solid rgba(0,0,0,0.15);
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--primary);
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        }
         /* 雙系統地圖按鈕組 (Nmap & Google Maps) */
         .map-btn-group {
             display: flex;
@@ -642,17 +661,20 @@
         </div>
     </div>
 
-    <!-- Modal 4: 美食地圖 (新增區域互動地圖) -->
+    <!-- Modal 4: 美食地圖 (確保僅有單一地圖容器) -->
     <div id="food-modal" class="modal">
         <div class="modal-handle"></div>
         <span class="close-x" onclick="hideModal('food')">✕</span>
         <h2 style="color:#D35400; margin-bottom: 10px; font-weight: 800; font-size:16px;">🍱 釜山 8 天 7 夜精選美食大地圖</h2>
         
-        <!-- 美食專屬地圖視窗 -->
-        <div id="food-map" style="width: 100%; height: 160px; border-radius: 12px; margin-bottom: 12px; border: 1px solid rgba(0,0,0,0.1); background: #e5e5ea; z-index: 5;"></div>
+        <!-- 單一地圖容器 + 單一定位按鈕 -->
+        <div style="position: relative;">
+            <div id="food-map" style="width: 100%; height: 180px; border-radius: 12px; margin-bottom: 12px; border: 1px solid rgba(0,0,0,0.1); background: #e5e5ea; z-index: 5;"></div>
+            <button class="locate-btn" onclick="locateAndFilterFood()" style="position: absolute; bottom: 8px; right: 8px; z-index: 1000; background: #fff; border: 1px solid rgba(0,0,0,0.15); border-radius: 8px; padding: 5px 10px; font-size: 11px; font-weight: 800; color: var(--primary); cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.15);">📍 尋找周邊美食</button>
+        </div>
 
         <div class="guide-box" style="margin-bottom: 12px; border-left-color: #D35400; background: rgba(211, 84, 0, 0.06);">
-            💡 <b>親子與孝親用餐提示：</b> 釜山豬肉湯飯、黑醬炸醬麵、烤盤邊緣蒸蛋與無骨炸雞皆為不辣菜色，非常適合 1 歲與 4 歲幼兒及長辈享用！
+            💡 <b>親子與孝親用餐提示：</b> 釜山豬肉湯飯、黑醬炸醬麵、烤盤邊緣蒸蛋與無骨炸雞皆為不辣菜色[cite: 2]，非常適合 1 歲與 4 歲幼兒及長輩享用[cite: 2]！
         </div>
 
         <div id="foodListContainer"></div>
@@ -1833,63 +1855,127 @@
 
         let foodMap = null;
         let foodMapMarkers = [];
+        let userMarker = null;
 
-        // 升級版 updateFoodModal：同時渲染卡片與在地圖上標註餐廳點位
-        function updateFoodModal() {
-            // 1. 渲染餐廳卡片清單
-            const container = document.getElementById('foodListContainer');
-            if (container) {
-                container.innerHTML = foodListData.map(r => `
-                    <div class="card" style="margin-bottom: 10px; border-left: 3.5px solid var(--primary-light);">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
-                            <strong style="font-size: 14px; color: var(--text-dark);">${r.name}</strong>
-                            <span style="font-size: 10px; background: rgba(10, 132, 255, 0.1); color: var(--primary); padding: 2px 6px; border-radius: 4px; font-weight: 700;">${r.region || '釜山'}</span>
-                        </div>
-                        <small style="color: var(--accent); font-weight: 700; display: block; margin-bottom: 3px;">🍲 招牌: ${r.dish}</small>
-                        <small style="color: var(--text-muted); display: block; margin-bottom: 6px; line-height: 1.4;">${r.info}</small>
-                        <div class="map-btn-group">
-                            <button class="map-btn google" onclick="openGoogleMap('${r.addr || r.name}')">🗺️ Google</button>
-                            <button class="map-btn naver" onclick="openNaverMap('${r.koreanAddr || r.addr || r.name}')">🧭 Naver Map</button>
-                        </div>
-                    </div>
-                `).join('');
+        // 計算兩點間距離 (Haversine Formula)
+        function getDistanceKm(lat1, lon1, lat2, lon2) {
+            const R = 6371; // 地球半徑 (km)
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+        }
+
+        // 定位並聚焦當前周邊美食
+        function locateAndFilterFood() {
+            if (!navigator.geolocation) {
+                alert("您的瀏覽器不支援定位功能");
+                return;
             }
 
-            // 2. 初始化與更新 Modal 內的美食地圖
-        setTimeout(() => {
-            if (typeof L === 'undefined') return;
+            navigator.geolocation.getCurrentPosition(pos => {
+                const uLat = pos.coords.latitude;
+                const uLng = pos.coords.longitude;
 
-            const mapEl = document.getElementById('food-map');
-            if (!mapEl) return;
+                if (!foodMap) return;
 
-            if (!foodMap) {
-                foodMap = L.map('food-map', { zoomControl: false }).setView([35.1612, 129.1595], 11);
+                // 1. 繪製/更新使用者定位點（藍點）
+                if (userMarker) foodMap.removeLayer(userMarker);
+                userMarker = L.circleMarker([uLat, uLng], {
+                    color: '#0A84FF',
+                    fillColor: '#0A84FF',
+                    fillOpacity: 0.9,
+                    radius: 7
+                }).addTo(foodMap).bindPopup("<b>📍 你在這裡</b>").openPopup();
+
+                // 2. 計算所有餐廳與當前位置的距離並排序
+                foodListData.forEach(r => {
+                    if (r.lat && r.lng) {
+                        r.distance = getDistanceKm(uLat, uLng, r.lat, r.lng);
+                    } else {
+                        r.distance = 9999;
+                    }
+                });
+
+                // 按距離由近到遠排序
+                foodListData.sort((a, b) => a.distance - b.distance);
+
+                // 3. 視角聚焦在使用者周邊 (縮放層級 14，約方圓 1.5 公里)
+                foodMap.setView([uLat, uLng], 14);
+
+                // 4. 重新渲染近距離餐廳清單卡片
+                renderFoodCards();
+            }, err => {
+                alert("無法取得您的即時定位，請確認定位權限已開啟。");
+            });
+        }
+
+        // 渲染餐廳卡片清單 (帶有距離標示)
+        function renderFoodCards() {
+            const container = document.getElementById('foodListContainer');
+            if (!container) return;
+
+            container.innerHTML = foodListData.map(r => `
+                <div class="card" style="margin-bottom: 10px; border-left: 3.5px solid var(--primary-light);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+                        <strong style="font-size: 14px; color: var(--text-dark);">${r.name}</strong>
+                        <div>
+                            ${r.distance && r.distance < 9000 ? `<span style="font-size: 10px; background: rgba(52, 199, 89, 0.15); color: #27C93F; padding: 2px 6px; border-radius: 4px; font-weight: 700; margin-right: 4px;">📍 ${r.distance < 1 ? Math.round(r.distance * 1000) + 'm' : r.distance.toFixed(1) + 'km'}</span>` : ''}
+                            <span style="font-size: 10px; background: rgba(10, 132, 255, 0.1); color: var(--primary); padding: 2px 6px; border-radius: 4px; font-weight: 700;">${r.area || '釜山'}</span>
+                        </div>
+                    </div>
+                    <small style="color: var(--accent); font-weight: 700; display: block; margin-bottom: 3px;">🍲 招牌: ${r.dish}</small>
+                    <small style="color: var(--text-muted); display: block; margin-bottom: 6px; line-height: 1.4;">${r.info}</small>
+                    <div class="map-btn-group">
+                        <button class="map-btn google" onclick="openGoogleMap('${r.addr || r.name}')">🗺️ Google Maps</button>
+                        <button class="map-btn naver" onclick="openNaverMap('${r.koreanAddr || r.addr || r.name}')">🧭 Naver Map</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateFoodModal() {
+            // 1. 先渲染下方美食卡片
+            renderFoodCards();
+
+            // 2. 延遲等 Modal 動畫完成後再渲染地圖（防止 DOM 尺寸為 0）
+            setTimeout(() => {
+                if (typeof L === 'undefined') return;
+
+                const mapContainer = document.getElementById('food-map');
+                if (!mapContainer) return;
+
+                // 防爆重點：若已有舊的 foodMap 實體，先銷毀重建，防止畫面出現雙重地圖或灰屏！
+                if (foodMap !== null) {
+                    foodMap.remove();
+                    foodMap = null;
+                }
+
+                // 初始化單一美食地圖
+                foodMap = L.map('food-map', { zoomControl: false }).setView([35.1612, 129.1595], 12);
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                     maxZoom: 18,
                     attribution: '© OpenStreetMap'
                 }).addTo(foodMap);
-            }
 
-            // 清除舊地標
-            foodMapMarkers.forEach(m => foodMap.removeLayer(m));
-            foodMapMarkers = [];
+                // 強制刷新尺寸
+                foodMap.invalidateSize();
 
-            let bounds = [];
-            foodListData.forEach(r => {
-                if (r.lat && r.lng) {
-                    const marker = L.marker([r.lat, r.lng]).addTo(foodMap);
-                    marker.bindPopup(`<b>${r.name}</b><br><small>${r.dish}</small>`);
-                    foodMapMarkers.push(marker);
-                    bounds.push([r.lat, r.lng]);
-                }
-            });
+                // 標註所有美食點位
+                foodMapMarkers = [];
+                foodListData.forEach(r => {
+                    if (r.lat && r.lng) {
+                        const marker = L.marker([r.lat, r.lng]).addTo(foodMap);
+                        marker.bindPopup(`<b>${r.name}</b><br><small>${r.dish}</small>`);
+                        foodMapMarkers.push(marker);
+                    }
+                });
 
-            // 強制刷新尺寸與縮放視角
-            foodMap.invalidateSize();
-            if (bounds.length > 0) {
-                foodMap.fitBounds(bounds, { padding: [20, 20] });
-            }
-        }, 450); // 👈 調整為 450ms，等 Modal 完全展開後再載入圖資
+                // 自動進行周邊定位
+                locateAndFilterFood();
+            }, 450);
         }
 
         /* 手勢切換與 iOS Modal 滑動關閉 */
