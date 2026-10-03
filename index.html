@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>2026 釜山親子 slow travel 導航助理 V13.0</title>
+    <title>2026 釜山親子 slow travel 導航助理</title>
     <!-- Leaflet.js 地圖庫 (解決 L undefined 問題) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -571,10 +571,10 @@
     <div class="tool-bar">
         <button class="tool-btn" onclick="showModal('care')">👶 育兒必看</button>
         <button class="tool-btn" onclick="showModal('housing')">🏡 住宿交通</button>
-        <button class="tool-btn" onclick="showModal('tickets')" style="background:rgba(10, 132, 255, 0.05); border:1px solid rgba(10,132,255,0.15);">🎟️ 搶票清單</button>	
+        <button class="tool-btn" onclick="showModal('tickets')" style="background:rgba(255, 149, 0, 0.08); border:1px solid rgba(255, 149, 0, 0.3); color:#D35400;">🎟️ 門票與 PASS</button>
+        <button class="tool-btn" onclick="showModal('momGuide')" style="background:rgba(255, 45, 85, 0.06); border:1px solid rgba(255, 45, 85, 0.2); color:var(--mom-mode);">👩‍👦 獨家出關會合</button>	
         <button class="tool-btn" onclick="showModal('food')" style="background:rgba(255, 149, 0, 0.05); border:1px solid rgba(255,149,0,0.15);">🍱 美食地圖</button>
-        <button class="tool-btn" onclick="showModal('entry')" style="background:rgba(52, 199, 89, 0.05); border:1px solid rgba(52,199,89,0.15);">📄 機票航班</button>
-        <button class="tool-btn" onclick="showModal('sos')" style="color:#FF3B30">🆘 緊急求助</button>
+        <button class="tool-btn" onclick="showModal('sos')" style="color:#FF3B30">🆘 救急韓文/SOS</button>
     </div>
 
     <div id="dayTitleContainer"></div>
@@ -615,7 +615,7 @@
             <p onclick="copy('11 Gunam-ro 41beon-gil, Haeundae, Busan')">📍 <span style="text-decoration: underline; color: var(--primary);">11 Gunam-ro 41beon-gil, Haeundae, Busan</span> 📋</p>
             <small style="color:var(--text-muted); display:block; margin-bottom:8px;">⚠️ 位於 2-3 樓無電梯需爬樓梯；門口為徒步區，計程車請於巷口上下車。</small>
             <div class="map-btn-group">
-                <button class="map-btn nmap" onclick="openMap('11 Gunam-ro 41beon-gil, Haeundae, Busan', 'nmap')">🧭 Nmap 導航</button>
+                <button class="map-btn nmap" onclick="openMap('부산 해운대구 구남로41번길 11', 'nmap')">🧭 Nmap 導航</button>
                 <button class="map-btn" onclick="openMap('11 Gunam-ro 41beon-gil, Haeundae, Busan', 'gmap')">🗺️ Google 地圖</button>
             </div>
         </div>
@@ -626,7 +626,7 @@
             <p onclick="copy('10 Dongcheon-ro 132beon-gil, Busanjin-gu, Busan')">📍 <span style="text-decoration: underline; color: var(--primary);">10 Dongcheon-ro 132beon-gil, Busanjin-gu, Busan</span> 📋</p>
             <small style="color:var(--text-muted); display:block; margin-bottom:8px;">★ 周邊地勢平坦，推車逛街極度友善。</small>
             <div class="map-btn-group">
-                <button class="map-btn nmap" onclick="openMap('10 Dongcheon-ro 132beon-gil, Busanjin-gu, Busan', 'nmap')">🧭 Nmap 導航</button>
+                <button class="map-btn nmap" onclick="openMap('부산 부산진구 동천로132번길 10', 'nmap')">🧭 Nmap 導航</button>
                 <button class="map-btn" onclick="openMap('10 Dongcheon-ro 132beon-gil, Busanjin-gu, Busan', 'gmap')">🗺️ Google 地圖</button>
             </div>
         </div>
@@ -639,26 +639,131 @@
         </div>
     </div>
 
-    <!-- Modal 3: 搶票清單 -->
+    <!-- Modal 3: 門票與 PASS 評估與需求總表 -->
     <div id="tickets-modal" class="modal">
         <div class="modal-handle"></div>
         <span class="close-x" onclick="hideModal('tickets')">✕</span>
-        <h2 style="color:var(--primary); margin-bottom: 15px; font-weight: 800;">🎟️ 搶票與票券準備攻略</h2>
-        
-        <div class="card" style="margin-bottom:12px; border-left: 5px solid #FF3B30;">
-            <strong>🚨 天空膠囊列車 (Sky Capsule)</strong> <span class="price-tag">必搶</span>
-            <p style="font-size:12px; color:#555; margin:4px 0;">乘車日前 4 週每週二 06:00 (台灣時間) 開放官網預約。目標：11/03 16:00 青沙浦 ➔ 尾浦 (夕陽黃金班次)。切換英文版勾選 FOREIGN CARD 付款。</p>
+        <h2 style="color:var(--text-dark); margin-bottom: 12px; font-weight: 800; font-size:16px;">🎟️ 門票需求總表與 Visit Busan Pass 評估</h2>
+                       
+        <!-- 方案摘要卡片 -->
+        <div class="card" style="margin-bottom: 12px; border-left: 4px solid var(--primary);">
+            <strong style="color:var(--primary); font-size:14px;">💳 購票方案決策摘要</strong>
+            <p style="font-size:12px; color:#333; margin:6px 0 2px;">
+                • <b>大人 2 位</b>：購買 <b>Visit Busan Pass BIG3</b>（售價 ₩45,000/人），用來免費兌換海洋館、觀景台與松島纜車。<br>
+                • <b>大女兒 (4歲)</b>：使用 <b>Klook 線上預購兒童票</b>，享專屬折扣且免現場排隊。<br>
+                • <b>小女兒 (1歲)</b>：全程景點 <b>免費入場</b>（需隨身攜帶護照備查）。
+            </p>
         </div>
 
-        <div class="card" style="margin-bottom:12px; border-left: 5px solid var(--accent);">
-            <strong>🚨 巨濟島一日遊專車</strong> <span class="price-tag">提前2-3週</span>
-            <p style="font-size:12px; color:#555; margin:4px 0;">出發前 2~3 週於 Klook/KKday 完成預訂。含外島渡輪與門票，免去 9 人跨海交通接駁問題。</p>
-        </div>
+        <!-- 4歲大女兒預購清單卡片 -->
+        <div class="card" style="margin-bottom: 12px; border-left: 4px solid var(--accent);">
+            <strong style="color:var(--accent); font-size:14px;">👧 4 歲大女兒 Klook 線上預購與兌換</strong>
+            <p style="font-size:11px; color:var(--text-muted); margin:4px 0 8px;">點擊按鈕開啟 Klook 平台預購兒童票或開啟電子憑證：</p>
+            
+            <div style="margin-bottom: 10px; padding: 8px; background: rgba(0,0,0,0.02); border-radius: 8px;">
+                <div style="font-size:12px; font-weight:bold;">1. SEA LIFE 釜山海洋館 (D5)</div>
+                <div style="font-size:11px; color:#555; margin-bottom:4px;">適用：兒童票 (36個月-12歲) ｜ 現場原價 ₩27,500</div>
+                <button class="map-btn" style="background: #FF5722; color: white;" onclick="openKlookApp('https://www.klook.com/zh-TW/activity/8542-sea-life-busan-aquarium/')">🛍️ 開啟 Klook 買兒童票 / 秀憑證</button>
+            </div>
 
-        <div class="card" style="margin-bottom:12px; border-left: 5px solid var(--secondary);">
-            <strong>💡 線上預購優惠 (SEA LIFE / Busan X the Sky)</strong>
-            <p style="font-size:12px; color:#555; margin:4px 0;">Klook/KKday 事先購買電子票，享 15-20% 折扣且可掃 QR Code 通關免排隊。</p>
+            <div style="margin-bottom: 10px; padding: 8px; background: rgba(0,0,0,0.02); border-radius: 8px;">
+                <div style="font-size:12px; font-weight:bold;">2. Busan X the Sky 觀景台 (D5)</div>
+                <div style="font-size:11px; color:#555; margin-bottom:4px;">適用：兒童票 (36個月-12歲) ｜ 現場原價 ₩24,000</div>
+                <button class="map-btn" style="background: #FF5722; color: white;" onclick="openKlookApp('https://www.klook.com/zh-TW/activity/71597-busan-x-the-sky-ticket-busan/')">🛍️ 開啟 Klook 買兒童票 / 秀憑證</button>
+            </div>
+
+            <div style="margin-bottom: 5px; padding: 8px; background: rgba(0,0,0,0.02); border-radius: 8px;">
+                <div style="font-size:12px; font-weight:bold;">3. 松島海上纜車 (D2)</div>
+                <div style="font-size:11px; color:#555; margin-bottom:4px;">適用：兒童票 (36個月-12歲) ｜ 水晶車廂單程 ₩12,000</div>
+                <button class="map-btn" style="background: #FF5722; color: white;" onclick="openKlookApp('https://www.klook.com/zh-TW/activity/27170-songdo-sea-cable-car-ticket-busan/')">🛍️ 開啟 Klook 買兒童票 / 秀憑證</button>
+            </div>
         </div>
+        <!-- Pass 划算度精算評估 -->
+        <div class="card" style="margin-bottom: 12px; border-left: 4px solid var(--secondary);">
+            <strong style="color:var(--secondary); font-size:14px;">💳 釜山 Pass 划算度評估結論</strong>
+            <p style="font-size:12px; color:#333; margin:6px 0 2px; line-height:1.5;">
+                • <b>大人買 BIG 3 Pass 最划算</b>：大人散買 3 大景點需 ₩75,000，購買 BIG 3（₩45,000/人），<b>每位大人現省 ₩30,000 (兩位共省 ₩60,000)</b>，且完全無 24HR 倒數時間壓力！<br>
+                • <b>4 歲大女兒不需買 Pass</b>：各景點皆有兒童票優惠（散買約 ₩61,000），直接在 Klook 單買兒童票比買 Pass 更省錢。
+            </p>
+            <div style="margin-top:8px;">
+                <button class="map-btn" style="background: #00C73C; color: white; margin-bottom:6px;" onclick="openPassApp()">📱 開啟 Visit Busan Pass 兌換頁</button>
+                <button class="map-btn" style="background: rgba(0,0,0,0.05); color: #333;" onclick="openKlookApp('https://www.klook.com/zh-TW/activity/81216-visit-busan-pass/')">🎟️ Klook 預購 Visit Busan Pass</button>
+            </div>
+        </div>
+        <!-- 門票與票券需求總表 -->
+        <div class="card" style="margin-bottom: 12px; padding: 12px;">
+            <strong style="color:var(--primary); font-size:13px; display:block; margin-bottom:6px;">📊 全行程景點收費方式與家庭總價 (2大2幼)</strong>
+            <table class="info-table">
+                <thead>
+                    <tr>
+                        <th>景點項目</th>
+                        <th>成人單價</th>
+                        <th>4歲大女兒</th>
+                        <th>家庭總價</th>
+                        <th>Pass 適用</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><b>松島纜車</b> (水晶單程)</td>
+                        <td>₩17,000</td>
+                        <td>₩12,000 (兒童)</td>
+                        <td><b>₩46,000</b></td>
+                        <td>✅ 可兌換</td>
+                    </tr>
+                    <tr>
+                        <td><b>松島龍宮雲橋</b></td>
+                        <td>₩1,000</td>
+                        <td>免費 (&lt;6歲)</td>
+                        <td><b>₩2,000</b></td>
+                        <td>✅ 可兌換</td>
+                    </tr>
+                    <tr>
+                        <td><b>SEA LIFE 海洋館</b></td>
+                        <td>₩31,000</td>
+                        <td>₩25,000 (兒童)</td>
+                        <td><b>₩87,000</b></td>
+                        <td>✅ 可兌換</td>
+                    </tr>
+                    <tr>
+                        <td><b>Busan X the Sky</b></td>
+                        <td>₩27,000</td>
+                        <td>₩24,000 (兒童)</td>
+                        <td><b>₩78,000</b></td>
+                        <td>✅ 可兌換</td>
+                    </tr>
+                    <tr>
+                        <td><b>天空膠囊列車</b></td>
+                        <td>按車計費</td>
+                        <td>包車共乘</td>
+                        <td><b>₩45,000</b></td>
+                        <td>❌ 需自費預約</td>
+                    </tr>
+                    <tr>
+                        <td><b>ZOORAJI 恐龍公園</b></td>
+                        <td>免費</td>
+                        <td>免費</td>
+                        <td><b>₩0</b></td>
+                        <td>免門票</td>
+                    </tr>
+                    <tr>
+                        <td><b>釜山兒童大公園</b></td>
+                        <td>免費</td>
+                        <td>免費</td>
+                        <td><b>₩0</b></td>
+                        <td>免門票</td>
+                    </tr>
+                    <tr>
+                        <td><b>金井山城纜車</b> (D7)</td>
+                        <td>₩11,000</td>
+                        <td>₩6,000 (兒童)</td>
+                        <td><b>₩28,000</b></td>
+                        <td>❌ 需自費購票</td>
+                    </tr>
+                </tbody>
+            </table>
+            <small style="color:var(--text-muted); display:block; margin-top:4px;">* 1 歲小女兒全景點皆為免費入場（請隨身攜帶護照備查）。</small>
+        </div>         
     </div>
 
     <!-- Modal 4: 美食地圖 (確保僅有單一地圖容器) -->
@@ -674,7 +779,7 @@
         </div>
 
         <div class="guide-box" style="margin-bottom: 12px; border-left-color: #D35400; background: rgba(211, 84, 0, 0.06);">
-            💡 <b>親子與孝親用餐提示：</b> 釜山豬肉湯飯、黑醬炸醬麵、烤盤邊緣蒸蛋與無骨炸雞皆為不辣菜色[cite: 2]，非常適合 1 歲與 4 歲幼兒及長輩享用[cite: 2]！
+            💡 <b>親子與孝親用餐提示：</b> 釜山豬肉湯飯、黑醬炸醬麵、烤盤邊緣蒸蛋與無骨炸雞皆為不辣菜色，非常適合 1 歲與 4 歲幼兒及長輩享用！
         </div>
 
         <div id="foodListContainer"></div>
@@ -772,7 +877,7 @@
                 area: "冬柏島入口",
                 info: "【D5晚餐/點心】現炸無骨炸魚薯條外酥內嫩完全不辣，可於露天座椅區邊吃點心邊欣賞 Marine City 摩天大樓夜景。", 
                 dish: "現炸無骨魚塊 / 現炸薯條", 
-                addr: "The Bay 101", 
+                addr: "더베이101", 
                 koreanAddr: "더베이101", 
                 lat: 35.1567, lng: 129.1523 
             },
@@ -781,7 +886,7 @@
                 area: "青沙浦海岸第一排",
                 info: "【D4下午茶】大片落地窗正對青沙浦藍海與雙燈塔。內用沙發區寬敞，適合大人看海放鬆、小孩在推車上記續午睡。", 
                 dish: "手沖海景咖啡 / 造型甜甜圈", 
-                addr: "H.US Coffee", 
+                addr: "에이치어스", 
                 koreanAddr: "에이치어스", 
                 lat: 35.1610, lng: 129.1920 
             },
@@ -803,7 +908,7 @@
                 area: "松島纜車岩南公園站",
                 info: "【D2午餐首选】纜車站 1F 美食街提供熱騰騰不辣海鮮刀削麵；帳篷區烤貝拼盤會附贈起司大蝦與漢堡排，小孩很喜歡。", 
                 dish: "不辣海鮮刀削麵 / 起司烤貝", 
-                addr: "Amnam Park", 
+                addr: "암남공원", 
                 koreanAddr: "암남공원", 
                 lat: 35.0620, lng: 129.0195 
             },
@@ -832,7 +937,7 @@
                 area: "Centum City 百貨 B1",
                 info: "【D3午餐首選】亞洲最大百貨美食街！推薦少年食堂醬蝦蓋飯與韓式牛肉定食，設有專屬兒童高腳椅與親子用餐區。", 
                 dish: "韓式牛肉定食 / 醬蝦蓋飯", 
-                addr: "Shinsegae Centum City", 
+                addr: "신세계백화점 센텀시티점", 
                 koreanAddr: "신세계백화점 센텀시티점", 
                 lat: 35.1689, lng: 129.1297 
             },
@@ -844,6 +949,36 @@
                 addr: "민락회타운", 
                 koreanAddr: "민락회타운", 
                 lat: 35.1545, lng: 129.1240 
+            },
+
+            { 
+                name: "고기굽는남자 광안리점 (烤肉的男子 廣安里店)", 
+                area: "廣安里",
+                info: "【⭐ 朋友極力推薦】廣安里海灘第一排超人氣燒肉店！專人高溫桌邊代烤，五花肉外酥內嫩多汁，附贈大醬湯與溫和蒸蛋，非常適合全家與幼兒享用。", 
+                dish: "熟成厚切豬五花 / 豬頸肉 / 溫和蒸蛋", 
+                addr: "고기굽는남자 광안리점", 
+                koreanAddr: "고기굽는남자 광안리점", 
+                lat: 35.1538, lng: 129.1185 
+            },
+            { 
+                name: "광안리 언양불고기부산집 (彥陽烤牛肉 釜山家)", 
+                area: "廣安里",
+                info: "【⭐ 傳統名店】釜山極具代表性的彥陽醃烤牛肉老店！肉質甘甜軟嫩入口即化，鹹甜醬汁極度下飯，完全不辣，1歲與4歲幼兒超愛吃。", 
+                dish: "彥陽醃烤牛肉 / 白切薄牛肉", 
+                addr: "언양불고기부산집", 
+                koreanAddr: "언양불고기부산집", 
+                lat: 35.1528, lng: 129.1172 
+            },
+
+            // --- 【西面/田浦區域新增】 ---
+            { 
+                name: "올드맨션 서면전포점 (老宅邸 燒肉 西面田浦店)", 
+                area: "西面/田浦",
+                info: "【⭐ 復古質感燒肉】田浦文創小巷內的韓屋老宅風燒肉店！頂級豬肉與牛肉品質極佳，氣氛絕佳且專人代烤，適合賞楓採買後放鬆享用。", 
+                dish: "老宅特選燒肉拼盤 / 熟成豬五花", 
+                addr: "올드맨션 서면전포점", 
+                koreanAddr: "올드맨션 서면전포점", 
+                lat: 35.1568, lng: 129.0625 
             },
 
             // --- 【西面 / 田浦 / 梵魚寺 區域】 ---
@@ -897,7 +1032,7 @@
                 area: "梵魚寺山腳",
                 info: "【D7午餐首選】賞楓後於山腳享用溫和不辣的韓式山菜定食、純豆腐鍋或高湯鴨肉飯，極具在地特色且對幼兒腸胃負擔低。", 
                 dish: "韓式山菜定食 / 高湯鴨肉飯", 
-                addr: "Beomeosa Temple", 
+                addr: "범어사", 
                 koreanAddr: "범어사", 
                 lat: 35.2820, lng: 129.0715 
             },
@@ -908,8 +1043,8 @@
                 area: "南浦洞 BIFF 廣場",
                 info: "【⭐ 釜山必吃散步小吃】以奶油現煎至金黃酥脆的餅皮切開，塞滿葵瓜子、花生、芝麻與黑糖粒，香甜酥翠。", 
                 dish: "元祖黑糖堅果糖餅 (씨앗호떡)", 
-                addr: "BIFF Square", 
-                koreanAddr: "BIFF 광장", 
+                addr: "BIFF광장", 
+                koreanAddr: "BIFF광장", 
                 lat: 35.0988, lng: 129.0298 
             },
             { 
@@ -917,7 +1052,7 @@
                 area: "海雲台傳統市場內",
                 info: "【⭐ Dal-An 房源樓下必買】現做現煎，外皮 Q 彈，黑糖內餡濃郁熱騰騰，排隊人潮絡繹不絕。", 
                 dish: "堅果黑糖餅", 
-                addr: "海雲台傳統市場", 
+                addr: "해운대시장", 
                 koreanAddr: "해운대시장", 
                 lat: 35.1614, lng: 129.1600 
             },
@@ -959,17 +1094,17 @@
                 title: "抵達釜山與海雲台慢活散策",
                 nodes: [
                     { time: "07:40 - 10:50", title: "搭乘華航 CI188 飛抵釜山", stay: "N/A", guide: "【啟程】桃園 T1 出發 ➔ 10:50 抵達金海機場 I，辦理出關並領取託運之嬰兒推車。" },
-                    { trans: [{ type: "🚖", text: "<b>預約 Jumbo Taxi / 大型包車</b><br>直達海雲台 Dal-An 房源（車程約 50 分鐘），免去沙上站大轉乘之苦。", addr: "11 Gunam-ro 41beon-gil, Haeundae, Busan" }] },
+                    { trans: [{ type: "🚖", text: "<b>預約 Jumbo Taxi / 大型包車</b><br>直達海雲台 Dal-An 房源（車程約 50 分鐘），免去沙上站大轉乘之苦。", addr: "11 Gunam-ro 41beon-gil, Haeundae, Busan", nmapAddr: "부산 해운대구 구남로41번길 11" }] },
                     { time: "12:30 - 14:00", title: "Dal-An 房源寄放行李 ➔ 尚國家飯捲午餐", isDining: true, options: [
-                        { name: "尚國家飯捲 (상국이네)", info: "首選：房源樓下傳統市場內！不辣飯捲搭溫和魚糕高湯，快速補給體力。", dish: "招牌飯捲 / 魚糕湯", addr: "상국이네", isPrimary: true },
-                        { name: "古來思魚糕 (海雲台店)", info: "備案：寬敞店面，現選現熱熱騰騰魚糕麵，幼兒接受度高。", dish: "章魚魚糕 / 魚糕烏龍麵", addr: "고래사어묵 해운대점", isPrimary: false }
+                        { name: "尚國家飯捲 (상국이네)", info: "首選：房源樓下傳統市場內！不辣飯捲搭溫和魚糕高湯，快速補給體力。", dish: "招牌飯捲 / 魚糕湯", addr: "상국이네", nmapAddr: "상국이네", isPrimary: true },
+                        { name: "古來思魚糕 (海雲台店)", info: "備案：寬敞店面，現選現熱熱騰騰魚糕麵，幼兒接受度高。", dish: "章魚魚糕 / 魚糕烏龍麵", addr: "고래사어묵 해운대점", nmapAddr: "고래사어묵 해운대점", isPrimary: false }
                     ]},
-                    { time: "14:00 - 15:30", title: "古南路 (Gunam-ro) 百貨大街慢活散策 🛍️", addr: "Gunam-ro, Busan", stay: "1.5hr", guide: "【散步採買】寬敞平坦，逛 Olive Young 美妝、Daiso、人生四格拍貼店與 T1 Base。" },
-                    { time: "15:30 - 17:30", title: "海雲台沙灘 (Haeundae Beach) 踩水放電 🏖️", addr: "Haeundae Beach", stay: "2hr", guide: "【放電】讓 4 歲大女兒與 1 歲小女兒在乾淨沙灘踩水玩沙，欣賞黃昏海岸魔幻時刻。" },
+                    { time: "14:00 - 15:30", title: "古南路 (Gunam-ro) 百貨大街慢活散策 🛍️", addr: "Gunam-ro, Busan", nmapAddr: "구남로", stay: "1.5hr", guide: "【散步採買】寬敞平坦，逛 Olive Young 美妝、Daiso、人生四格拍貼店與 T1 Base。" },
+                    { time: "15:30 - 17:30", title: "海雲台沙灘 (Haeundae Beach) 踩水放電 🏖️", addr: "Haeundae Beach", nmapAddr: "해운대해수욕장", stay: "2hr", guide: "【放電】讓 4 歲大女兒與 1 歲小女兒在乾淨沙灘踩水玩沙，欣賞黃昏海岸魔幻時刻。" },
                     { time: "17:30 - 19:30", title: "晚餐三方案選擇 ➔ 噴泉表演 ➔ 糖餅補給", isDining: true, options: [
-                        { name: "海雲台傳統市場豬肉湯飯", info: "方案A (首選)：樓下傳統市場內，清甜高湯去油豬肉片，極適合幼兒泡飯，吃完直接上樓休息。", dish: "豬肉湯飯 (돼지국밥)", addr: "해운대 전통시장", isPrimary: true },
-                        { name: "伍班長烤肉 (오반장)", info: "方案B：古南路巷內，炭火烤肉免費附贈邊緣甜蒸蛋，小孩超愛。", dish: "烤豬五花 / 邊緣蒸蛋", addr: "오반장", isPrimary: false },
-                        { name: "味贊王鹽烤肉 (맛찬들)", info: "方案C：全程專人桌邊代烤，大人免動手照顧火爐，安全省力。", dish: "3.5cm 厚切熟成豬五花", addr: "맛찬들왕소금구이 해운대점", isPrimary: false }
+                        { name: "海雲台傳統市場豬肉湯飯", info: "方案A (首選)：樓下傳統市場內，清甜高湯去油豬肉片，極適合幼兒泡飯，吃完直接上樓休息。", dish: "豬肉湯飯 (돼지국밥)", addr: "해운대 전통시장", nmapAddr: "해운대시장", isPrimary: true },
+                        { name: "伍班長烤肉 (오반장)", info: "方案B：古南路巷內，炭火烤肉免費附贈邊緣甜蒸蛋，小孩超愛。", dish: "烤豬五花 / 邊緣蒸蛋", addr: "오반장", nmapAddr: "오반장", isPrimary: false },
+                        { name: "味贊王鹽烤肉 (맛찬들)", info: "方案C：全程專人桌邊代烤，大人免動手照顧火爐，安全省力。", dish: "3.5cm 厚切熟成豬五花", addr: "맛찬들왕소금구이 해운대점", nmapAddr: "맛찬들왕소금구이 해운대점", isPrimary: false }
                     ]}
                 ]
             },
@@ -980,6 +1115,7 @@
                         time: "09:00 - 09:40", 
                         title: "海雲台 Dal-An 房源出發 ➔ 影島白淺灘文化村 🌊", 
                         addr: "Huinnyeoul Culture Village", 
+                        nmapAddr: "흰여울문화마을",
                         stay: "35min", 
                         guide: "【跨區移動】搭乘 Jumbo Taxi / 大型計程車直達影島（車程約 35 分鐘）。" 
                     },
@@ -987,6 +1123,7 @@
                         time: "09:40 - 12:00", 
                         title: "白淺灘文化村懸崖上層散策 & 海景咖啡廳 ☕", 
                         addr: "Huinnyeoul Culture Village", 
+                        nmapAddr: "흰여울문화마을",
                         stay: "2.5hr", 
                         guide: "【重點貼士】絕影海岸散步路階梯極多且陡峭，嚴禁推車！請全程留在懸崖上方「馬路主幹道平路」散步與拍照。" 
                     },
@@ -1000,6 +1137,7 @@
                         time: "12:00 - 12:20",
                         title: "【支線 A】短程移動：白淺灘 ➔ 岩南公園 🚖",
                         addr: "Amnam Park",
+                        nmapAddr: "암남공원",
                         stay: "15min",
                         guide: "搭乘計程車跨越南港大橋直達岩南公園（車程約 15 分鐘，小孩在車上休息）。"
                     },
@@ -1009,8 +1147,8 @@
                         title: "【支線 A】岩南公園 & 龍宮雲橋 & 午餐 🍴",
                         isDining: true,
                         options: [
-                            { name: "岩南公園 1F/3F 美食街", info: "首選：熱騰騰不辣海鮮刀削麵、烏龍麵與魚糕湯，座位寬敞，適合幼兒泡飯與吃飽後在推車上順暢午睡。", dish: "海鮮刀削麵 / 烏龍麵", addr: "Amnam Park", isPrimary: true },
-                            { name: "岩南公園烤貝帳篷街 (崔氏烤貝/海生家)", info: "備案：烤貝拼盤附贈起司大蝦、漢堡排與起司拉麵，甜鹹口味 4 歲小孩非常喜歡。", dish: "起司大蝦 / 漢堡排", addr: "Amnam Park", isPrimary: false }
+                            { name: "岩南公園 1F/3F 美食街", info: "首選：熱騰騰不辣海鮮刀削麵、烏龍麵與魚糕湯，座位寬敞，適合幼兒泡飯與吃飽後在推車上順暢午睡。", dish: "海鮮刀削麵 / 烏龍麵", addr: "Amnam Park", nmapAddr: "암남공원", isPrimary: true },
+                            { name: "岩南公園烤貝帳篷街 (崔氏烤貝/海生家)", info: "備案：烤貝拼盤附贈起司大蝦、漢堡排與起司拉麵，甜鹹口味 4 歲小孩非常喜歡。", dish: "起司大蝦 / 漢堡排", addr: "Amnam Park", nmapAddr: "암남공원", isPrimary: false }
                         ]
                     },
                     {
@@ -1018,6 +1156,7 @@
                         time: "14:00 - 14:40",
                         title: "【支線 A】松島海上纜車 (逆向：岩南公園站 ➔ 松島灣站) 🪟",
                         addr: "Songdo Cable Car Amnam Park",
+                        nmapAddr: "송도해상케이블카",
                         stay: "40min",
                         guide: "【逆向策略】採用逆向策略完全免排隊，隨到隨直接登上水晶透明車廂。"
                     },
@@ -1026,6 +1165,7 @@
                         time: "14:40 - 15:40",
                         title: "【支線 A】松島天空步道 漫步 🌉",
                         addr: "Songdo Skywalk",
+                        nmapAddr: "송도구름산책로",
                         stay: "1hr",
                         guide: "漫步松島天空步道，由下往上仰望海景與天空中穿梭的纜車。"
                     },
@@ -1036,6 +1176,7 @@
                         time: "12:00 - 12:20",
                         title: "【支線 B】短程移動：白淺灘 ➔ 松島灣站 🚖",
                         addr: "Songdo Sea Cable Car",
+                        nmapAddr: "송도해상케이블카",
                         stay: "15min",
                         guide: "搭乘計程車跨越南港大橋直達松島海水浴場/松島灣站（車程約 15 分鐘）。"
                     },
@@ -1044,6 +1185,7 @@
                         time: "12:20 - 13:20",
                         title: "【支線 B】松島天空步道 漫步 🌉",
                         addr: "Songdo Skywalk",
+                        nmapAddr: "송도구름산책로",
                         stay: "1hr",
                         guide: "漫步松島天空步道，欣賞海上雕像與腳下清澈海景。"
                     },
@@ -1052,6 +1194,7 @@
                         time: "13:20 - 14:20",
                         title: "【支線 B】松島海上纜車 (順向：松島灣站 ➔ 岩南公園站) 🪟",
                         addr: "Songdo Sea Cable Car",
+                        nmapAddr: "송도해상케이블카",
                         stay: "1hr",
                         guide: "【注意事項】上午/午後順向排隊人潮較多（特別是水晶車廂），建議預留 30~40 分鐘排隊等待時間。"
                     },
@@ -1061,8 +1204,8 @@
                         title: "【支線 B】岩南公園 & 龍宮雲橋 & 午餐/早午餐 🍴",
                         isDining: true,
                         options: [
-                            { name: "松島海水浴場沿海 - 本粥 (본죽)", info: "首選：營養海鮮粥、牛肉蔬菜粥，質地軟爛溫和，1 歲與 4 歲幼兒的最佳營養選擇。", dish: "海鮮粥 / 牛肉蔬菜粥", addr: "본죽 송도점", isPrimary: true },
-                            { name: "岩南公園纜車站 1F 美食街", info: "備案：熱烏龍麵、魚糕湯與韓式炸雞。", dish: "烏龍麵 / 韓式炸雞", addr: "Amnam Park", isPrimary: false }
+                            { name: "松島海水浴場沿海 - 本粥 (본죽)", info: "首選：營養海鮮粥、牛肉蔬菜粥，質地軟爛溫和，1 歲與 4 歲幼兒的最佳營養選擇。", dish: "海鮮粥 / 牛肉蔬菜粥", addr: "본죽 송도점", nmapAddr: "본죽 송도점", isPrimary: true },
+                            { name: "岩南公園纜車站 1F 美食街", info: "備案：熱烏龍麵、魚糕湯與韓式炸雞。", dish: "烏龍麵 / 韓式炸雞", addr: "Amnam Park", nmapAddr: "암남공원", isPrimary: false }
                         ]
                     },
 
@@ -1071,6 +1214,7 @@
                         time: "15:40 - 18:30",
                         title: "南浦洞商圈 & 必逛巡禮 (ABC-MART / ARTBOX / Olive Young) 🛍️",
                         addr: "BIFF Square",
+                        nmapAddr: "BIFF광장",
                         stay: "2.5hr",
                         guide: "【必逛亮點】擁有完整 2.5 小時採買：<br>1. <b>ABC-MART Grand Stage</b>：全釜山最大鞋款旗艦店<br>2. <b>ARTBOX</b>：可愛卡通 IP 周邊與 Bath Bomb 泡澡球（買給 4 歲大女兒當獎勵）<br>3. <b>樂天百貨光復店 5F</b>：頂級五星級育嬰室備案<br>4. <b>BIFF 廣場</b>：現煎元祖黑糖堅果糖餅"
                     },
@@ -1079,8 +1223,8 @@
                         title: "晚餐：富平豬腳一條街 🍖",
                         isDining: true,
                         options: [
-                            { name: "漢陽豬腳 (한양족발)", info: "首選：招牌原味豬腳肉質 Q 彈薄切、不油不辣，附贈溫和豆腐湯與沙發座。", dish: "原味豬腳", addr: "한양족발", isPrimary: true },
-                            { name: "釜山豬腳 (부산족발)", info: "備案：老字號涼拌與原味豬腳，在地人熱門選擇。", dish: "原味豬腳", addr: "부산족발", isPrimary: false }
+                            { name: "漢陽豬腳 (한양족발)", info: "首選：招牌原味豬腳肉質 Q 彈薄切、不油不辣，附贈溫和豆腐湯與沙發座。", dish: "原味豬腳", addr: "한양족발", nmapAddr: "한양족발", isPrimary: true },
+                            { name: "釜山豬腳 (부산족발)", info: "備案：老字號涼拌與原味豬腳，在地人熱門選擇。", dish: "原味豬腳", addr: "부산족발", nmapAddr: "부산족발", isPrimary: false }
                         ]
                     }
                 ]
@@ -1092,6 +1236,7 @@
                         time: "09:00 - 09:40", 
                         title: "海雲台 Dal-An 房源出發 ➔ 釜山兒童大公園 🍁", 
                         addr: "Busan Children's Grand Park", 
+                        nmapAddr: "부산어린이대공원",
                         stay: "35min", 
                         guide: "【跨區移動】搭乘大型計程車/Jumbo Taxi 前往釜山兒童大公園（車程約 35 分鐘）。" 
                     },
@@ -1099,6 +1244,7 @@
                         time: "09:40 - 12:00", 
                         title: "聖知谷水源地環湖賞楓 🚶‍♂️", 
                         addr: "Busan Children's Grand Park", 
+                        nmapAddr: "부산어린이대공원",
                         stay: "2.2hr", 
                         guide: "【賞楓重點】漫步環湖木棧步道，欣賞楓紅與水岸景色。全線平坦無障礙，推車極度友善。" 
                     },
@@ -1112,6 +1258,7 @@
                         time: "12:00 - 12:30",
                         title: "【支線 A】短程移動：兒童大公園 ➔ 新世界百貨 Centum City 店 🚖",
                         addr: "Shinsegae Centum City",
+                        nmapAddr: "신세계백화점 센텀시티점",
                         stay: "25min",
                         guide: "搭乘計程車前往新世界百貨（車程約 25 分鐘）。"
                     },
@@ -1121,8 +1268,8 @@
                         title: "【支線 A】新世界百貨巡禮 & 美食街午餐 & 9F 恐龍公園放電 🦖",
                         isDining: true,
                         options: [
-                            { name: "新世界 Centum City B1 美食街", info: "首選：少年食堂醬蝦蓋飯、南坡家韓式定食，或各式不辣烏龍麵與高湯飯捲。", dish: "醬蝦蓋飯 / 溫和烏龍麵", addr: "Shinsegae Centum City", isPrimary: true },
-                            { name: "新世界 Centum City 9F 餐廳街 (Dim Tao)", info: "備案：精緻港式點心與咸興冷麵，設有獨立舒適沙發座與兒童椅。", dish: "港式點心 / 鮮蝦燒賣", addr: "Shinsegae Centum City", isPrimary: false }
+                            { name: "新世界 Centum City B1 美食街", info: "首選：少年食堂醬蝦蓋飯、南坡家韓式定食，或各式不辣烏龍麵與高湯飯捲。", dish: "醬蝦蓋飯 / 溫和烏龍麵", addr: "Shinsegae Centum City", nmapAddr: "신세계백화점 센텀시티점", isPrimary: true },
+                            { name: "新世界 Centum City 9F 餐廳街 (Dim Tao)", info: "備案：精緻港式點心與咸興冷麵，設有獨立舒適沙發座與兒童椅。", dish: "港式點心 / 鮮蝦燒賣", addr: "Shinsegae Centum City", nmapAddr: "신세계백화점 센텀시티점", isPrimary: false }
                         ]
                     },
                     {
@@ -1130,6 +1277,7 @@
                         time: "14:00 - 16:15",
                         title: "【支線 A】9F ZOORAJI 恐龍公園 & 6F 兒童區充電 🎠",
                         addr: "Shinsegae Centum City",
+                        nmapAddr: "신세계백화점 센텀시티점",
                         stay: "2.2hr",
                         guide: "【親子亮點】9F 免門票恐龍露天主題公園可坐旋轉木馬與海盜船放電；6F 設有高級育嬰室，大人可輪流購物、讓小孩在推車上下午睡。"
                     },
@@ -1138,6 +1286,7 @@
                         time: "16:15 - 16:30",
                         title: "【支線 A】短程移動：新世界百貨 ➔ 廣安里沙灘 🚖",
                         addr: "Gwangalli Beach",
+                        nmapAddr: "광안리해수욕장",
                         stay: "15min",
                         guide: "距離廣安里極近！搭乘計程車約 12~15 分鐘即可抵達海岸。"
                     },
@@ -1148,6 +1297,7 @@
                         time: "12:00 - 12:15",
                         title: "【支線 B】快速移動：兒童大公園 ➔ 西面樂天百貨總店 🚖",
                         addr: "Lotte Department Store Busan Main",
+                        nmapAddr: "롯데백화점 본점",
                         stay: "12min",
                         guide: "【車程最短】搭乘計程車車程僅 10~12 分鐘，能最快讓電力耗盡的小孩進室內休息。"
                     },
@@ -1157,8 +1307,8 @@
                         title: "【支線 B】樂天百貨 B1 滋補午餐 & 5F 頂級育嬰室充電 🥣",
                         isDining: true,
                         options: [
-                            { name: "樂天總店 B1 美食街 (百濟參雞湯)", info: "首選：雞湯溫和滋補，去骨雞肉與高湯極適合幼兒泡飯，另有鼎泰豐與不辣蒸餃。", dish: "百濟參雞湯 / 鮮肉蒸餃", addr: "Lotte Department Store Busan Main", isPrimary: true },
-                            { name: "樂天總店 9F 美食街 (味贊王分店)", info: "備案：味贊王鹽烤肉分店或溫和韓式豆腐鍋定食。", dish: "熟成烤豬五花", addr: "Lotte Department Store Busan Main", isPrimary: false }
+                            { name: "樂天總店 B1 美食街 (百濟參雞湯)", info: "首選：雞湯溫和滋補，去骨雞肉與高湯極適合幼兒泡飯，另有鼎泰豐與不辣蒸餃。", dish: "百濟參雞湯 / 鮮肉蒸餃", addr: "Lotte Department Store Busan Main", nmapAddr: "롯데백화점 본점", isPrimary: true },
+                            { name: "樂天總店 9F 美食街 (味贊王分店)", info: "備案：味贊王鹽烤肉分店或溫和韓式豆腐鍋定食。", dish: "熟成烤豬五花", addr: "Lotte Department Store Busan Main", nmapAddr: "롯데백화점 본점", isPrimary: false }
                         ]
                     },
                     {
@@ -1166,6 +1316,7 @@
                         time: "13:30 - 16:00",
                         title: "【支線 B】5F 頂級育嬰室休養 & 潮流品牌購物 🛍️",
                         addr: "Lotte Department Store Busan Main",
+                        nmapAddr: "롯데백화점 본점",
                         stay: "2.5hr",
                         guide: "【頂級育嬰室】全釜山設備最完善育嬰室，適合 1 歲幼兒換尿布、泡奶與推車午睡，大人可輪流採買潮牌辦理退稅。"
                     },
@@ -1174,6 +1325,7 @@
                         time: "16:00 - 16:30",
                         title: "【支線 B】中程移動：西面樂天 ➔ 廣安里沙灘 🚖",
                         addr: "Gwangalli Beach",
+                        nmapAddr: "광안리해수욕장",
                         stay: "25min",
                         guide: "搭乘計程車約 20~25 分鐘，建議預留市區微塞車時間，於 16:30 前順利抵達海岸。"
                     },
@@ -1183,6 +1335,7 @@
                         time: "16:30 - 18:00",
                         title: "廣安里沙灘步道散步 🌊",
                         addr: "Gwangalli Beach",
+                        nmapAddr: "광안리해수욕장",
                         stay: "1.5hr",
                         guide: "【景觀特色】1.4 公里月牙弧形沙灘正對廣安大橋。沿海平坦無障礙木棧道極適合推車，可欣賞夕陽粉紫與金黃漸變光暈。"
                     },
@@ -1191,9 +1344,22 @@
                         title: "廣安里海景晚餐 & 廣安大橋夜景 🌉",
                         isDining: true,
                         options: [
-                            { name: "民樂生魚片城 / 海景烤貝熟食 (민락회타운)", info: "首選：高樓層落地窗俯瞰廣安大橋夜景！熟食鮑魚粥與海鮮煎餅不辣軟嫩，適合幼兒。", dish: "鮑魚粥 / 海鮮熟食拼盤", addr: "Millak Raw Fish Center", isPrimary: true },
-                            { name: "廣安里 宿星 we (숙성도 廣安店)", info: "備案一：韓國頂級熟成烤肉名店，肉質軟嫩多汁，工作人員代烤，無敵海景第一排。", dish: "熟成黑豬肉五花", addr: "숙성도 광안점", isPrimary: false },
-                            { name: "廣安里 蛤蜊海鮮刀削麵", info: "備案二：湯頭鮮甜無辣味，麵條 Q 彈，極適合 1 歲與 4 歲小孩配湯吃麵。", dish: "巨無霸蛤蜊刀削麵", addr: "Gwangalli Beach", isPrimary: false }
+                            { 
+                                name: "彥陽烤牛肉 釜山家 (언양불고기부산집)", 
+                                info: "首選：釜山極具代表性的彥陽醃烤牛肉老店！肉質甘甜軟嫩入口即化，鹹甜醬汁極度下飯，完全不辣，1歲與4歲幼兒超愛吃。", 
+                                dish: "彥陽醃烤牛肉 / 白切薄牛肉", 
+                                addr: "Eonyang Bulgogi Busanjip", 
+                                nmapAddr: "언양불고기부산집", 
+                                isPrimary: true 
+                            },
+                            { 
+                                name: "烤肉的男子 廣安里店 (고기굽는남자 광안리점)", 
+                                info: "備案：廣安里海灘第一排超人氣燒肉店！專人高溫桌邊代烤，五花肉外酥內嫩多汁，附贈大醬湯與溫和蒸蛋，非常適合全家與幼兒享用。", 
+                                dish: "熟成厚切豬五花 / 豬頸肉 / 溫和蒸蛋", 
+                                addr: "Gogi Gupneun Namja Gwangalli", 
+                                nmapAddr: "고기굽는남자 광안리점", 
+                                isPrimary: false 
+                            }
                         ]
                     }
                 ]
@@ -1205,6 +1371,7 @@
                         time: "09:30 - 10:00", 
                         title: "海雲台 Dal-An 房源出發 ➔ 海東龍宮寺 🚖", 
                         addr: "Haedong Yonggungsa Temple", 
+                        nmapAddr: "해동용궁사",
                         stay: "30min", 
                         guide: "【跨區移動】自 Dal-An 房源門口搭乘 Kakao T 大型計程車 (Jumbo Taxi) 直達海東龍宮寺（車程約 20 分鐘）。" 
                     },
@@ -1212,6 +1379,7 @@
                         time: "10:00 - 11:40", 
                         title: "海東龍宮寺參拜 & 海岸觀景 ⛩️", 
                         addr: "Haedong Yonggungsa Temple", 
+                        nmapAddr: "해동용궁사",
                         stay: "1.7hr", 
                         guide: "【⚠️ 推車重要提醒】寺廟入口有 108 階陡峭石階，<b>推車完全無法推進去</b>！請將推車寄放於入口，改用揹巾揹 1 歲妹妹，4 歲大女兒由大人牽著走。<br>💡 <b>彈性備案：</b>若龍宮寺因階梯走完提早結束，請勿去耗體力的 Outlet，直接提早前往青沙浦喝咖啡看海！" 
                     },
@@ -1220,14 +1388,15 @@
                         title: "午餐：龍宮海鮮炸醬麵 (용궁해물쟁반짜장) 🍜", 
                         isDining: true, 
                         options: [
-                            { name: "龍宮海鮮炸醬麵 (용궁해물쟁반짜장)", info: "首選：寺外斜坡步行 5 分鐘。招牌黑醬炸醬麵鹹甜不辣、糖醋肉外酥內軟，孩子接受度 100%。", dish: "海鮮醬炸醬麵 / 糖醋肉", addr: "용궁해물쟁반짜장", isPrimary: true },
-                            { name: "海東龍宮寺入口小吃攤街", info: "備案：現煮魚糕串、熱高湯與韓式雞蛋糕，適合快速墊胃。", dish: "魚糕串 / 雞蛋糕", addr: "Haedong Yonggungsa Temple", isPrimary: false }
+                            { name: "龍宮海鮮炸醬麵 (용궁해물쟁반짜장)", info: "首選：寺外斜坡步行 5 分鐘。招牌黑醬炸醬麵鹹甜不辣、糖醋肉外酥內軟，孩子接受度 100%。", dish: "海鮮醬炸醬麵 / 糖醋肉", addr: "용궁해물쟁반짜장", nmapAddr: "용궁해물쟁반짜장", isPrimary: true },
+                            { name: "海東龍宮寺入口小吃攤街", info: "備案：現煮魚糕串、熱高湯與韓式雞蛋糕，適合快速墊胃。", dish: "魚糕串 / 雞蛋糕", addr: "Haedong Yonggungsa Temple", nmapAddr: "해동용궁사", isPrimary: false }
                         ]
                     },
                     { 
                         time: "13:00 - 13:15", 
                         title: "短程移動：龍宮寺 ➔ 青沙浦 🚖", 
                         addr: "Cheongsapo", 
+                        nmapAddr: "청사포",
                         stay: "15min", 
                         guide: "吃飽後搭乘計程車直達青沙浦（車程僅約 10 分鐘，車資約 6,000 韓元）。" 
                     },
@@ -1235,30 +1404,33 @@
                         time: "13:15 - 15:40", 
                         title: "青沙浦深度散策 & 海景咖啡廳 (小孩午睡充電影) 📸", 
                         addr: "Cheongsapo", 
+                        nmapAddr: "청사포",
                         stay: "2.4hr", 
                         guide: "【青沙浦亮點指南】<br>1. <b>韓版灌籃高手平交道</b>：等候海岸列車通過拍攝絕美海景。<br>2. <b>紅白雙燈塔</b>：防波堤平坦步道，推車極度舒適。<br>3. <b>踏石展望台 (Skywalk)</b>：高空俯瞰清澈海水。<br>4. <b>海景咖啡廳 (H.US Coffee / Alice Donut)</b>：大片落地窗正對海景，大人喝咖啡，<b>讓 1 歲與 4 歲孩子在推車上順暢午睡補眠</b>。" 
                     },
                     { 
-                        time: "15:40 - 16:30", 
-                        title: "🚨 核心重頭戲：天空膠囊列車 (青沙浦站 ➔ 尾浦站，預約 16:00 班次) 🚃", 
+                        time: "16:10 - 17:00", 
+                        title: "🚨 核心重頭戲：天空膠囊列車 (青沙浦站 ➔ 尾浦站，預約 16:30 班次) 🚃", 
                         addr: "Cheongsapo Station", 
+                        nmapAddr: "청사포정거장",
                         stay: "50min", 
                         guide: "【黃金夕陽班次】按車廂發售（請預訂 2 台 4人座車廂，1歲妹妹不佔位）。車廂行駛於靠海側軌道，坐在車內直擊金色海面與夕陽落日！" 
                     },
                     { 
-                        time: "16:30 - 17:30", 
+                        time: "17:00 - 18:00", 
                         title: "尾浦舊鐵道木棧步道散策 (Green Railway) 🌊", 
                         addr: "Mipo Station", 
+                        nmapAddr: "미포정거장",
                         stay: "1hr", 
                         guide: "【尾浦延伸路線】抵達尾浦站後，沿著全新鋪設的海濱木棧道 (Green Railway) 向海雲台方向慢散步。<b>完全無障礙無階梯，推車極度友善</b>！可打卡 LCT 摩天大樓海岸天際線。" 
                     },
                     { 
-                        time: "17:30 - 19:00", 
+                        time: "18:00 - 19:30", 
                         title: "晚餐：海雲台伍班長烤肉 (오반장) 🥩", 
                         isDining: true, 
                         options: [
-                            { name: "伍班長烤肉 (오반장)", info: "首選：尾浦散步 10 分鐘即達古南路巷內。經典炭火烤肉，烤盤外圈免費贈送嫩甜蒸蛋與不辣豬肉，小孩超愛！", dish: "炭火烤豬五花 / 邊緣甜蒸蛋", addr: "오반장", isPrimary: true },
-                            { name: "海雲台傳統市場豬肉湯飯", info: "備案：清甜大骨高湯與去油豬肉片，配飯溫和不辣，吃完直接回房。", dish: "豬肉湯飯", addr: "해운대 전통시장", isPrimary: false }
+                            { name: "伍班長烤肉 (오반장)", info: "首選：尾浦散步 10 分鐘即達古南路巷內。經典炭火烤肉，烤盤外圈免費贈送嫩甜蒸蛋與不辣豬肉，小孩超愛！", dish: "炭火烤豬五花 / 邊緣甜蒸蛋", addr: "오반장", nmapAddr: "오반장", isPrimary: true },
+                            { name: "海雲台傳統市場豬肉湯飯", info: "備案：清甜大骨高湯與去油豬肉片，配飯溫和不辣，吃完直接回房。", dish: "豬肉湯飯", addr: "해운대 전통시장", nmapAddr: "해운대시장", isPrimary: false }
                         ]
                     }
                 ]
@@ -1270,6 +1442,7 @@
                         time: "10:00 - 12:00",
                         title: "SEA LIFE 釜山海洋館 (海底隧道 & 觸摸池) 🐬",
                         addr: "SEA LIFE Busan Aquarium",
+                        nmapAddr: "SEA LIFE 부산아쿠아리움",
                         stay: "2hr",
                         guide: "【景點介紹】位於海雲台海灘地下的水族館，有 80m 海底隧道與鯊魚餵食表演。全程無障礙電梯與平坦坡道，推車極度友善。"
                     },
@@ -1283,6 +1456,7 @@
                                 info: "首選：古南路大店面。大骨高湯清甜濃郁完全不辣，肉片去油，極度適合舀給 1 歲與 4 歲幼兒泡飯，備有兒童椅。", 
                                 dish: "豬肉湯飯 / 招牌高湯", 
                                 addr: "밀양순대돼지국밥 해운대점", 
+                                nmapAddr: "밀양순대돼지국밥 해운대점",
                                 isPrimary: true 
                             },
                             { 
@@ -1290,6 +1464,7 @@
                                 info: "備案：位於 LCT 大樓旁。大人享用奢華生醃海鮮醬蟹拼盤，幼兒享用熱騰騰不辣的鮑魚/香菇釜飯與烘蛋。", 
                                 dish: "海鮮醬蟹拼盤 / 精緻釜飯", 
                                 addr: "미포집 해운대본점", 
+                                nmapAddr: "미포집 해운대본점",
                                 isPrimary: false 
                             }
                         ]
@@ -1298,6 +1473,7 @@
                         time: "13:30 - 15:30",
                         title: "Busan X the Sky (100樓觀景台 & 世界最高星巴克) 🏙️",
                         addr: "Busan X the Sky",
+                        nmapAddr: "부산엑스더스카이",
                         stay: "2hr",
                         guide: "【景點介紹】56秒直達 100 樓，360 度俯瞰海雲台月牙灣。空調舒適，若小孩在此時於推車上入睡，大人可以在沙發區安靜喝咖啡賞景。"
                     },
@@ -1305,6 +1481,7 @@
                         time: "15:30 - 17:00",
                         title: "冬柏島環島木棧道散策 & APCC 世峰樓 🌲",
                         addr: "Dongbaekseom Island",
+                        nmapAddr: "동백섬",
                         stay: "1.5hr",
                         guide: "【景點介紹】陸連島茂密林蔭步道。全程 100% 平坦無障礙木棧道，推車極度順暢，沿途可觀賞人魚雕像與海浪拍岸景色。"
                     },
@@ -1318,6 +1495,7 @@
                                 info: "首選：17:15 欣賞黃昏落日，17:40 欣賞 Marine City 點燈倒影。享用現炸無骨魚塊與薯條（不辣軟嫩，幼兒最愛）。", 
                                 dish: "炸魚薯條 / 軟性飲料", 
                                 addr: "The Bay 101", 
+                                nmapAddr: "더베이101",
                                 isPrimary: true 
                             },
                             { 
@@ -1325,6 +1503,7 @@
                                 info: "備案：若想吃熱湯，拍完夜景後可散步回古南路享用溫和麵食或飯捲。", 
                                 dish: "魚糕湯 / 韓式飯捲", 
                                 addr: "11 Gunam-ro 41beon-gil, Haeundae, Busan", 
+                                nmapAddr: "부산 해운대구 구남로41번길 11",
                                 isPrimary: false 
                             }
                         ]
@@ -1333,6 +1512,7 @@
                         time: "18:30 - 19:30",
                         title: "🏠 返回海雲台 Dal-An 房源 (20:00 幼兒準時躺平)",
                         addr: "Dal-An Stay Haeundae",
+                        nmapAddr: "부산 해운대구 구남로41번길 11",
                         stay: "30min",
                         guide: "【作息卡片】搭乘計程車（5分鐘）或散步 15 分鐘返回 Dal-An 房源。19:00 前抵達洗沐，確保幼兒於 20:00 準時躺平，維持優質體力。"
                     }
@@ -1345,6 +1525,7 @@
                         time: "10:30 - 11:00", 
                         title: "海雲台 Dal-An 房源退房 ➔ 西面 Angel 房源寄放行李 🚖", 
                         addr: "Angel Stay Jeonpo", 
+                        nmapAddr: "부산 부산진구 동천로132번길 10",
                         stay: "30min", 
                         guide: "【跨區移動】一家四口（2大2幼）獨自行動，搭乘大型計程車直達西面田浦 Angel 房源寄放行李（車程約 30 分鐘，司機協助搬運大行李與推車）。" 
                     },
@@ -1353,17 +1534,18 @@
                         title: "午餐：西面在地指標餐廳巡禮 (5選1) 🍜", 
                         isDining: true, 
                         options: [
-                            { name: "松亭三代豬肉湯飯 (송정삼대돼지국밥)", info: "首選：70年老字號，清甜大骨高湯與軟嫩白切肉，適合幼兒泡飯。", dish: "豬肉湯飯 / 白切肉定食", addr: "송정삼대돼지국밥", isPrimary: true },
-                            { name: "味贊王鹽烤肉 西面店 (맛찬들)", info: "備案一：3.5cm 超厚切豬五花，全程專人桌邊代烤，附蒸蛋與不辣小菜。", dish: "熟成厚切豬五花", addr: "맛찬들왕소금구이 서면점", isPrimary: false },
-                            { name: "機張刀削麵 (기장칼국수)", info: "備案二：米其林推薦平價手打麵，請店家去除辣醬，搭配不辣薄皮蒸餃。", dish: "手打刀削麵 / 海鮮蒸餃", addr: "기장칼국수", isPrimary: false },
-                            { name: "陝川大發豬肉湯飯 (합천일류돼지국밥)", info: "備案三：大骨蒜香濃郁高湯，白飯免費續加，店面寬敞推車方便。", dish: "內臟豬肉湯飯", addr: "합천일류돼지국밥", isPrimary: false },
-                            { name: "嶺南麵屋 (영남밀면)", info: "備案四：釜山名物水小麥麵，湯頭清涼甘甜，搭配熱牛肉湯麵與現蒸肉餃。", dish: "水小麥麵 / 熱湯麵", addr: "영남밀면", isPrimary: false }
+                            { name: "松亭三代豬肉湯飯 (송정삼대돼지국밥)", info: "首選：70年老字號，清甜大骨高湯與軟嫩白切肉，適合幼兒泡飯。", dish: "豬肉湯飯 / 白切肉定食", addr: "송정삼대돼지국밥", nmapAddr: "송정3대국밥", isPrimary: true },
+                            { name: "味贊王鹽烤肉 西面店 (맛찬들)", info: "備案一：3.5cm 超厚切豬五花，全程專人桌邊代烤，附蒸蛋與不辣小菜。", dish: "熟成厚切豬五花", addr: "맛찬들왕소금구이 서면점", nmapAddr: "맛찬들왕소금구이 서면점", isPrimary: false },
+                            { name: "機張刀削麵 (기장칼국수)", info: "備案二：米其林推薦平價手打麵，請店家去除辣醬，搭配不辣薄皮蒸餃。", dish: "手打刀削麵 / 海鮮蒸餃", addr: "기장칼국수", nmapAddr: "기장칼국수", isPrimary: false },
+                            { name: "陝川大發豬肉湯飯 (합천일류돼지국밥)", info: "備案三：大骨蒜香濃郁高湯，白飯免費續加，店面寬敞推車方便。", dish: "內臟豬肉湯飯", addr: "합천일류돼지국밥", nmapAddr: "합천일류돼지국밥", isPrimary: false },
+                            { name: "嶺南麵屋 (영남밀면)", info: "備案四：釜山名物水小麥麵，湯頭清涼甘甜，搭配熱牛肉湯麵與現蒸肉餃。", dish: "水小麥麵 / 熱湯麵", addr: "영남밀면", nmapAddr: "영남밀면", isPrimary: false }
                         ]
                     },
                     { 
                         time: "12:30 - 15:00", 
                         title: "西面地下街 & 樂天百貨總店購物 (小孩推車午睡) 🛍️", 
                         addr: "Seomyeon Underground Shopping Center", 
+                        nmapAddr: "서면지하상가",
                         stay: "2.5hr", 
                         guide: "【購物與育兒】吃飽後小孩在推車上進入午睡。大人逛西面地下街採買平價童裝，或至樂天百貨總店 5F 使用全釜山最頂級育嬰室（溫水洗屁屁區/換尿布/哺乳室），輕鬆辦理退稅。" 
                     },
@@ -1371,6 +1553,7 @@
                         time: "15:00 - 17:30", 
                         title: "釜山市民公園 (Busan Citizens Park) 親子放電 🌳", 
                         addr: "Busan Citizens Park", 
+                        nmapAddr: "부산시민공원",
                         stay: "2.5hr", 
                         guide: "【計程車快速移動】於樂天/地下街出口搭計程車（車程僅 5~8 分鐘，車資約 5,000 韓元）。全平坦綠地公園，小孩醒來後在大型戶外沙坑與新穎遊樂設施狂跑放電。" 
                     },
@@ -1379,14 +1562,15 @@
                         title: "晚餐：味贊王鹽烤肉 (맛찬들 왕소금구이) / 西面在地美食 🥩", 
                         isDining: true, 
                         options: [
-                            { name: "味贊王鹽烤肉 西面店", info: "首選：搭計程車返回西面（車程約 8 分鐘）。專人桌邊代烤，安全省力。建議 17:30 前抵達避免帶幼兒排隊。", dish: "熟成豬五花 / 豬頸肉", addr: "맛찬들왕소금구이 서면점", isPrimary: true },
-                            { name: "田浦道具街特色定食 / 韓式炸雞", info: "備案：若不吃烤肉，可至田浦選物街享用溫和定食或外帶韓式炸雞回房。", dish: "韓式定食 / 無骨炸雞", addr: "Jeonpo Cafe Street", isPrimary: false }
+                            { name: "味贊王鹽烤肉 西面店", info: "首選：搭計程車返回西面（車程約 8 分鐘）。專人桌邊代烤，安全省力。建議 17:30 前抵達避免帶幼兒排隊。", dish: "熟成豬五花 / 豬頸肉", addr: "맛찬들왕소금구이 서면점", nmapAddr: "맛찬들왕소금구이 서면점", isPrimary: true },
+                            { name: "田浦道具街特色定食 / 韓式炸雞", info: "備案：若不吃烤肉，可至田浦選物街享用溫和定食或外帶韓式炸雞回房。", dish: "韓式定食 / 無骨炸雞", addr: "Jeonpo Cafe Street", nmapAddr: "전포카페거리", isPrimary: false }
                         ]
                     },
                     { 
                         time: "19:30 ~", 
                         title: "🏠 正式入住：西面田浦 Angel 房源 (休息放鬆)", 
                         addr: "Angel Stay Jeonpo", 
+                        nmapAddr: "부산 부산진구 동천로132번길 10",
                         stay: "Overnight", 
                         guide: "【房源收尾】返回 Angel 房源辦理正式入住，享受 35 坪獨棟大空間與獨樂露臺，讓全家獲得充沛休息。" 
                     }
@@ -1405,6 +1589,7 @@
                         time: "09:30 - 10:00",
                         title: "【上午支線 1】西面 Angel 房源 ➔ 梵魚寺 (Beomeosa) 🚖",
                         addr: "Beomeosa Temple",
+                        nmapAddr: "범어사",
                         stay: "30min",
                         guide: "搭乘計程車直達梵魚寺入口平路（車程約 25 分鐘，車資約 16,000 韓元）。"
                     },
@@ -1413,6 +1598,7 @@
                         time: "10:00 - 12:30",
                         title: "【上午支線 1】梵魚寺楓葉隧道與古寺漫步 🍁",
                         addr: "Beomeosa Temple",
+                        nmapAddr: "범어사",
                         stay: "2.5hr",
                         guide: "【賞楓重點】釜山第一賞楓名勝！寺前楓葉隧道極為壯麗，步道平緩好走，非常適合全家帶推車輕鬆漫步。"
                     },
@@ -1422,8 +1608,8 @@
                         title: "【上午支線 1】午餐：梵魚寺山腳在地韓定食/山菜定食 🍴",
                         isDining: true,
                         options: [
-                            { name: "梵魚寺山腳韓定食 / 山菜拌飯", info: "首選：享用溫和不辣的韓式山菜定食或高湯鴨肉飯，湯頭清甜適合幼兒。", dish: "韓式山菜定食 / 高湯鴨肉", addr: "Beomeosa Temple", isPrimary: true },
-                            { name: "梵魚寺周邊豆腐鍋定食", info: "備案：現做手工嫩豆腐與清淡高湯，小菜豐富。", dish: "純豆腐定食", addr: "Beomeosa Temple", isPrimary: false }
+                            { name: "梵魚寺山腳韓定食 / 山菜拌飯", info: "首選：享用溫和不辣的韓式山菜定食或高湯鴨肉飯，湯頭清甜適合幼兒。", dish: "韓式山菜定食 / 高湯鴨肉", addr: "Beomeosa Temple", nmapAddr: "범어사", isPrimary: true },
+                            { name: "梵魚寺周邊豆腐鍋定食", info: "備案：現做手工嫩豆腐與清淡高湯，小菜豐富。", dish: "純豆腐定食", addr: "Beomeosa Temple", nmapAddr: "범어사", isPrimary: false }
                         ]
                     },
 
@@ -1433,6 +1619,7 @@
                         time: "09:30 - 10:00",
                         title: "【上午支線 2】西面 Angel 房源 ➔ 金剛公園纜車站 🚖",
                         addr: "Geumgang Park Cable Car",
+                        nmapAddr: "금강공원 케이블카",
                         stay: "30min",
                         guide: "搭乘計程車直達金剛公園門口（車程約 20 分鐘，直達纜車入口）。"
                     },
@@ -1441,6 +1628,7 @@
                         time: "10:00 - 11:30",
                         title: "【上午支線 2】金井山城高空纜車 (Geumgang Park Cable Car) 🚠",
                         addr: "Geumgang Park Cable Car",
+                        nmapAddr: "금강공원 케이블카",
                         stay: "1.5hr",
                         guide: "【高空纜車】搭乘懷舊雙軌纜車穿梭於金井山奇岩與紅葉樹海之間，登頂俯瞰全釜山西北區市景，滿足高空視野需求！"
                     },
@@ -1449,6 +1637,7 @@
                         time: "11:30 - 12:00",
                         title: "【上午支線 2】短程移動：金剛公園 ➔ 梵魚寺 🚖",
                         addr: "Beomeosa Temple",
+                        nmapAddr: "범어사",
                         stay: "20min",
                         guide: "搭乘計程車前往梵魚寺（車程約 15 分鐘）。"
                     },
@@ -1458,8 +1647,8 @@
                         title: "【上午支線 2】梵魚寺楓葉隧道 ➔ 山菜韓定食午餐 🍁",
                         isDining: true,
                         options: [
-                            { name: "梵魚寺山腳在地韓定食", info: "首選：賞楓後於山腳享用溫和不辣的山菜定食或高湯鴨肉飯。", dish: "韓式山菜定食", addr: "Beomeosa Temple", isPrimary: true },
-                            { name: "金剛公園周邊鴨肉定食", info: "備案：東萊周邊老字號高湯鴨肉飯與韓式蒸餃。", dish: "高湯鴨肉飯", addr: "Geumgang Park", isPrimary: false }
+                            { name: "梵魚寺山腳在地韓定食", info: "首選：賞楓後於山腳享用溫和不辣的山菜定食或高湯鴨肉飯。", dish: "韓式山菜定食", addr: "Beomeosa Temple", nmapAddr: "범어사", isPrimary: true },
+                            { name: "金剛公園周邊鴨肉定食", info: "備案：東萊周邊老字號高湯鴨肉飯與韓式蒸餃。", dish: "Geumgang Park", nmapAddr: "금강공원", isPrimary: false }
                         ]
                     },
 
@@ -1474,6 +1663,7 @@
                         time: "14:00 - 14:30",
                         title: "【下午支線 1】移動：梵魚寺 ➔ 西面 Homeplus 超市 / 樂天百貨 🚖",
                         addr: "Homeplus Asiad",
+                        nmapAddr: "홈플러스 아시아드점",
                         stay: "30min",
                         guide: "搭乘計程車直達西面商圈（車程約 25 分鐘，小孩可以在車上順暢午睡）。"
                     },
@@ -1482,6 +1672,7 @@
                         time: "14:30 - 17:30",
                         title: "【下午支線 1】🛍️ 返台前最後大補貨：Homeplus 量販超市 / 樂天百貨總店",
                         addr: "Homeplus Asiad",
+                        nmapAddr: "홈플러스 아시아드점",
                         stay: "3hr",
                         guide: "【最後採買】1. <b>Homeplus / Emart 超市</b>：採買韓式零食、泡麵、海苔、伴手禮（現場可退稅）。<br>2. <b>樂天百貨總店 5F</b>：頂級育嬰室備用，採買潮牌與韓系童裝。"
                     },
@@ -1492,6 +1683,7 @@
                         time: "14:00 - 14:30",
                         title: "【下午支線 2】移動：梵魚寺 ➔ 釜山市民公園 (Busan Citizens Park) 🚖",
                         addr: "Busan Citizens Park",
+                        nmapAddr: "부산시민공원",
                         stay: "30min",
                         guide: "搭乘計程車直達釜山市民公園（車程約 25 分鐘，小孩在車上記續午睡）。"
                     },
@@ -1500,6 +1692,7 @@
                         time: "14:30 - 17:30",
                         title: "【下午支線 2】🌳 釜山市民公園 親子狂歡放電",
                         addr: "Busan Citizens Park",
+                        nmapAddr: "부산시민공원",
                         stay: "3hr",
                         guide: "【公園放電】100% 全平坦綠地公園，小孩醒來後在大型戶外沙坑、新穎遊樂設施狂跑放電，欣賞黃昏與銀杏大道景致。"
                     },
@@ -1510,11 +1703,11 @@
                         title: "晚餐：西面在地指標美食巡禮 (5 選 1) 🍜",
                         isDining: true,
                         options: [
-                            { name: "西面 橋村炸雞 (Kyochon Chicken)", info: "首選：現炸蜂蜜系列無骨炸雞，甜甜酥脆完全不辣，大人小孩皆喜愛。", dish: "蜂蜜無骨炸雞 / 現炸薯條", addr: "교촌치킨 서면점", isPrimary: true },
-                            { name: "松亭三代豬肉湯飯 (송정삼대돼지국밥)", info: "備案一：70年老字號，清甜大骨高湯與軟嫩白切肉，適合幼兒泡飯。", dish: "豬肉湯飯 / 白切肉定食", addr: "송정삼대돼지국밥", isPrimary: false },
-                            { name: "味贊王鹽烤肉 西面店 (맛찬들)", info: "備案二：3.5cm 超厚切豬五花，全程專人桌邊代烤，附蒸蛋與不辣小菜。", dish: "熟成厚切豬五花", addr: "맛찬들왕소금구이 서면점", isPrimary: false },
-                            { name: "機張刀削麵 (기장칼국수)", info: "備案三：米其林推薦平價手打麵，請店家去除辣醬，搭配不辣薄皮蒸餃。", dish: "手打刀削麵 / 海鮮蒸餃", addr: "기장칼국수", isPrimary: false },
-                            { name: "嶺南麵屋 (영남밀면)", info: "備案四：釜山名物水小麥麵，湯頭清涼甘甜，搭配熱牛肉湯麵與現蒸肉餃。", dish: "水小麥麵 / 熱湯麵", addr: "영남밀면", isPrimary: false }
+                            { name: "西面 橋村炸雞 (Kyochon Chicken)", info: "首選：現炸蜂蜜系列無骨炸雞，甜甜酥脆完全不辣，大人小孩皆喜愛。", dish: "蜂蜜無骨炸雞 / 現炸薯條", addr: "교촌치킨 서면점", nmapAddr: "교촌치킨 서면점", isPrimary: true },
+                            { name: "松亭三代豬肉湯飯 (송정삼대돼지국밥)", info: "備案一：70年老字號，清甜大骨高湯與軟嫩白切肉，適合幼兒泡飯。", dish: "豬肉湯飯 / 白切肉定食", addr: "송정삼대돼지국밥", nmapAddr: "송정3대국밥", isPrimary: false },
+                            { name: "味贊王鹽烤肉 西面店 (맛찬들)", info: "備案二：3.5cm 超厚切豬五花，全程專人桌邊代烤，附蒸蛋與不辣小菜。", dish: "熟成厚切豬五花", addr: "맛찬들왕소금구이 서면점", nmapAddr: "맛찬들왕소금구이 서면점", isPrimary: false },
+                            { name: "機張刀削麵 (기장칼국수)", info: "備案三：米其林推薦平價手打麵，請店家去除辣醬，搭配不辣薄皮蒸餃。", dish: "手打刀削麵 / 海鮮蒸餃", addr: "기장칼국수", nmapAddr: "기장칼국수", isPrimary: false },
+                            { name: "嶺南麵屋 (영남밀면)", info: "備案四：釜山名物水小麥麵，湯頭清涼甘甜，搭配熱牛肉湯麵與現蒸肉餃。", dish: "水小麥麵 / 熱湯麵", addr: "영남밀면", nmapAddr: "영남밀면", isPrimary: false }
                         ]
                     },
 
@@ -1523,6 +1716,7 @@
                         time: "19:30 ~",
                         title: "🏠 一鍵回民宿：返回西面 Angel 房源打包戰利品",
                         addr: "Angel Stay Jeonpo",
+                        nmapAddr: "부산 부산진구 동천로132번길 10",
                         stay: "Overnight",
                         guide: "【房源收尾】晚餐後漫步 3~5 分鐘返回 Angel 房源，享受最後一晚的大空間與獨棟露臺，整理 8 天來的戰利品與托運行李，準備明日返台。"
                     }
@@ -1531,8 +1725,8 @@
             8: {
                 title: "收拾戰利品、依依不捨返台 ✈️",
                 nodes: [
-                    { time: "08:00 - 08:40", title: "Angel 退房 ➔ 包車直達金海國際機場 (I)", addr: "Gimhae International Airport", stay: "40min", guide: "搭乘大型計程車直達機場，車程約 35 分鐘。" },
-                    { time: "08:40 - 11:50", title: "機場辦理託運、退稅與免稅店補貨 🛄", addr: "Gimhae International Airport", stay: "3hr", guide: "辦理行李與推車託運登記，最後免稅店採買伴手禮。" },
+                    { time: "08:00 - 08:40", title: "Angel 退房 ➔ 包車直達金海國際機場 (I)", addr: "Gimhae International Airport", nmapAddr: "김해국제공항", stay: "40min", guide: "搭乘大型計程車直達機場，車程約 35 分鐘。" },
+                    { time: "08:40 - 11:50", title: "機場辦理託運、退稅與免稅店補貨 🛄", addr: "Gimhae International Airport", nmapAddr: "김해국제공항", stay: "3hr", guide: "辦理行李與推車託運登記，最後免稅店採買伴手禮。" },
                     { time: "11:50 - 13:30", title: "搭乘華航 CI189 班機返抵台北 🛫", stay: "N/A", guide: "11:50 金海起飛 ➔ 13:30 順利返抵桃園機場 T1，結束美好行程！" }
                 ]
             }
@@ -1552,20 +1746,20 @@
                 nodes: [
                     { time: "07:40 - 10:50", title: "搭乘華航 CI188 班機 (HaoChun + MuTong) ✈️", stay: "N/A", guide: "【獨自帶娃登機】桃園 T1 出發 ➔ 10:50 抵達金海機場 I。推車使用至機艙門，下機空橋第一時間領取。" },
                     { time: "10:50 - 11:40", title: "快速通關 ➔ 出 Gate 3 搭計程車 🚖", stay: "N/A", guide: "走家庭 Priority 通關通道！出機場 Gate 3 叫 Kakao T Venti 直達影島白淺灘會合。" },
-                    { trans: [{ type: "🚖", text: "<b>直達會合點 (影島白淺灘文化村)</b><br>請將此韓文位址直接展示給司機：<br><b>영도 흰여울문화마을로 가주세요.</b>", addr: "Huinnyeoul Culture Village" }] },
-                    { time: "12:30 - 14:00", title: "抵達白淺灘 ➔ 與大部隊合流享用午餐 💖", addr: "Huinnyeoul Culture Village", stay: "1.5hr", guide: "成功在大部隊抵達白淺灘時會合！全家大團圓，享用溫和海鮮麵與熱高湯。" },
-                    { time: "14:00 - 18:30", title: "逆向松島纜車 ➔ 南浦洞商圈散策", addr: "BIFF Square", stay: "4.5hr", guide: "搭乘免排隊逆向水晶纜車，隨後前往南浦洞吃黑糖堅果糖餅與逛街。" },
+                    { trans: [{ type: "🚖", text: "<b>直達會合點 (影島白淺灘文化村)</b><br>請將此韓文位址直接展示給司機：<br><b>영도 흰여울문화마을로 가주세요.</b>", addr: "Huinnyeoul Culture Village", nmapAddr: "흰여울문화마을" }] },
+                    { time: "12:30 - 14:00", title: "抵達白淺灘 ➔ 與大部隊合流享用午餐 💖", addr: "Huinnyeoul Culture Village", nmapAddr: "흰여울문화마을", stay: "1.5hr", guide: "成功在大部隊抵達白淺灘時會合！全家大團圓，享用溫和海鮮麵與熱高湯。" },
+                    { time: "14:00 - 18:30", title: "逆向松島纜車 ➔ 南浦洞商圈散策", addr: "BIFF Square", nmapAddr: "BIFF광장", stay: "4.5hr", guide: "搭乘免排隊逆向水晶纜車，隨後前往南浦洞吃黑糖堅果糖餅與逛街。" },
                     { time: "18:30 - 20:00", title: "晚餐：富平豬腳一條街 🍖", isDining: true, options: [
-                        { name: "漢陽豬腳 (한양족발)", info: "首選：原味豬腳薄切不辣，全家歡慶團聚第一餐！", dish: "原味豬腳", addr: "한양족발", isPrimary: true }
+                        { name: "漢陽豬腳 (한양족발)", info: "首選：原味豬腳薄切不辣，全家歡慶團聚第一餐！", dish: "原味豬腳", addr: "한양족발", nmapAddr: "한양족발", isPrimary: true }
                     ]}
                 ]
             },
             3: {
                 title: "【大部隊完全合流】賞楓與新世界百貨巡禮",
                 nodes: [
-                    { time: "09:00 - 12:00", title: "釜山兒童大公園 聖知谷水源地賞楓 🍁", addr: "Busan Children's Grand Park", stay: "3hr", guide: "媽媽已完全歸隊，全家在平坦木棧步道享受賞楓與森林負離子。" },
-                    { time: "12:30 - 16:30", title: "新世界百貨 Centum City 店 (放電與購物) 🛍️", addr: "Shinsegae Centum City", stay: "4hr", guide: "享用美食街午餐，帶小孩去 9 樓恐龍公園放電與使用頂級育嬰室。" },
-                    { time: "16:30 - 20:00", title: "廣安里沙灘散步 ➔ 廣安大橋夜景晚餐 🌉", addr: "Gwangalli Beach", stay: "3.5hr", guide: "欣賞落日餘暉與夜景點燈，享用新鮮海鮮晚餐。" }
+                    { time: "09:00 - 12:00", title: "釜山兒童大公園 聖知谷水源地賞楓 🍁", addr: "Busan Children's Grand Park", nmapAddr: "부산어린이대공원", stay: "3hr", guide: "媽媽已完全歸隊，全家在平坦木棧步道享受賞楓與森林負離子。" },
+                    { time: "12:30 - 16:30", title: "新世界百貨 Centum City 店 (放電與購物) 🛍️", addr: "Shinsegae Centum City", nmapAddr: "신세계백화점 센텀시티점", stay: "4hr", guide: "享用美食街午餐，帶小孩去 9 樓恐龍公園放電與使用頂級育嬰室。" },
+                    { time: "16:30 - 20:00", title: "廣安里沙灘散步 ➔ 廣安大橋夜景晚餐 🌉", addr: "Gwangalli Beach", nmapAddr: "광안리해수욕장", stay: "3.5hr", guide: "欣賞落日餘暉與夜景點燈，享用新鮮海鮮晚餐。" }
                 ]
             }
         };
@@ -1629,7 +1823,7 @@
             const dayData = dataSource[day] || { title: `D${day} 行程`, nodes: [] };
 
             const titleContainer = document.getElementById('dayTitleContainer');
-            titleContainer.innerHTML = `<h2 class="day-main-title">${currentMode === 'mom' ? 'Mom Day ' : 'Day '}${day} \vert{}${dayData.title}</h2>`;
+            titleContainer.innerHTML = `<h2 class="day-main-title">${currentMode === 'mom' ? 'Mom Day ' : 'Day '}${day} | ${dayData.title}</h2>`;
 
             const container = document.getElementById('timelineContent');
             let html = ``;
@@ -1725,7 +1919,7 @@
                                         <div class="trans-text">
                                             ${t.text}
                                             <div class="map-btn-group">
-                                                <button class="map-btn nmap" onclick="openMap('${t.addr}', 'nmap')">🧭 Nmap 導航</button>
+                                                <button class="map-btn nmap" onclick="openMap('${t.nmapAddr || t.addr}', 'nmap')">🧭 Nmap 導航</button>
                                                 <button class="map-btn" onclick="openMap('${t.addr}', 'gmap')">🗺️ Google 地圖</button>
                                             </div>
                                         </div>
@@ -1745,7 +1939,7 @@
                                         ${o.isPrimary ? '<div class="primary-tag">★ 本日推薦首選</div>' : '<div class="backup-tag">⚡ 備案選項</div>'}
                                         <strong>${o.name}</strong><br><small style="color:#555">${o.info}</small>
                                         <div class="map-btn-group">
-                                            <button class="map-btn nmap" onclick="openMap('${o.addr || o.name}', 'nmap')">🧭 Nmap</button>
+                                            <button class="map-btn nmap" onclick="openMap('${o.nmapAddr || o.addr || o.name}', 'nmap')">🧭 Nmap</button>
                                             <button class="map-btn" onclick="openMap('${o.addr || o.name}', 'gmap')">🗺️ Google</button>
                                         </div>
                                         <div class="menu-pill" style="${o.isPrimary ? 'background:var(--accent); color:#fff;' : ''}">✨ 招牌：${o.dish}</div>
@@ -1764,7 +1958,7 @@
                                 ${n.guide ? `<div class="guide-box">${n.guide}</div>` : ''}
                                 ${n.addr ? `
                                 <div class="map-btn-group">
-                                    <button class="map-btn nmap" onclick="openMap('${n.addr}', 'nmap')">🧭 Naver Map (Nmap)</button>
+                                    <button class="map-btn nmap" onclick="openMap('${n.nmapAddr || n.addr}', 'nmap')">🧭 Naver Map (Nmap)</button>
                                     <button class="map-btn" onclick="openMap('${n.addr}', 'gmap')">🗺 Google Maps</button>
                                 </div>` : ''}
                             </div>
@@ -1775,7 +1969,8 @@
 
             // 每一天結尾的「一鍵回民宿卡片」
             if (currentMode === 'normal' && day < 8) {
-                const homeAddr = day <= 5 ? '11 Gunam-ro 41beon-gil, Haeundae, Busan' : '10 Dongcheon-ro 132beon-gil, Busanjin-gu, Busan';
+                const homeGmap = day <= 5 ? '11 Gunam-ro 41beon-gil, Haeundae, Busan' : '10 Dongcheon-ro 132beon-gil, Busanjin-gu, Busan';
+                const homeNmap = day <= 5 ? '부산 해운대구 구남로41번길 11' : '부산 부산진구 동천로132번길 10';
                 const homeName = day <= 5 ? '🏠 回海雲台 Dal-An 房源' : '🏠 回西面 Angel 房源';
                 html += `
                 <div class="timeline-node" style="margin-top:20px;">
@@ -1784,8 +1979,8 @@
                     <div class="card" style="background:rgba(255,255,255,0.4);">
                         <div style="font-weight:bold; font-size:15px;">${homeName}</div>
                         <div class="map-btn-group">
-                            <button class="map-btn nmap" onclick="openMap('${homeAddr}', 'nmap')">🧭 Nmap 回房源</button>
-                            <button class="map-btn" onclick="openMap('${homeAddr}', 'gmap')">🗺️ Google 回房源</button>
+                            <button class="map-btn nmap" onclick="openMap('${homeNmap}', 'nmap')">🧭 Nmap 回房源</button>
+                            <button class="map-btn" onclick="openMap('${homeGmap}', 'gmap')">🗺️ Google 回房源</button>
                         </div>
                     </div>
                 </div>`;
@@ -1929,7 +2124,7 @@
                     <small style="color: var(--accent); font-weight: 700; display: block; margin-bottom: 3px;">🍲 招牌: ${r.dish}</small>
                     <small style="color: var(--text-muted); display: block; margin-bottom: 6px; line-height: 1.4;">${r.info}</small>
                     <div class="map-btn-group">
-                        <button class="map-btn google" onclick="openGoogleMap('${r.addr || r.name}')">🗺️ Google Maps</button>
+                        <button class="map-btn google" onclick="openGoogleMap('${r.addr || r.name}')">🗺️️ Google Maps</button>
                         <button class="map-btn naver" onclick="openNaverMap('${r.koreanAddr || r.addr || r.name}')">🧭 Naver Map</button>
                     </div>
                 </div>
@@ -1978,6 +2173,66 @@
             }, 450);
         }
 
+        // 1. Google Maps 導航（自動編碼關鍵字）
+        function openGoogleMap(query) {
+            if (!query) return;
+            const encodedQuery = encodeURIComponent(query);
+            // 優先開啟 Google Maps App，若未安裝則打開網頁版
+            const url = `https://www.google.com/maps/search/?api=1&query=${encodedQuery}`;
+            window.open(url, '_blank');
+        }
+
+        // 2. Naver Map (Nmap) iOS 專用雙保險導航
+        function openNaverMap(query) {
+            if (!query) return;
+            const encodedQuery = encodeURIComponent(query);
+            
+            // iOS Naver Map App 喚起協定 (Deep Link)
+            const appUrl = `nmap://search?query=${encodedQuery}&appname=busan-family-2026.app`;
+            const webUrl = `https://m.map.naver.com/search2/search.naver?query=${encodedQuery}`;
+
+            // 判斷是否為 iOS / 行動裝置
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+            if (isMobile) {
+                // 嘗試開啟 Naver Map App
+                window.location.href = appUrl;
+
+                // 若 1.5 秒內未喚起 App，自動降級開啟網頁版 Naver Map
+                setTimeout(() => {
+                    window.open(webUrl, '_blank');
+                }, 1500);
+            } else {
+                // 桌機測試直接開啟 Naver Map 網頁版
+                window.open(webUrl, '_blank');
+            }
+        }
+        // 1. 開啟 Klook 平台/APP 頁面
+        function openKlookApp(url) {
+            if (!url) return;
+            // 如果是在 iOS / Android 行動裝置，會優先詢問開啟 Klook App
+            window.open(url, '_blank');
+        }
+
+        // 2. 開啟 Visit Busan Pass 網頁或 APP
+        function openPassApp() {
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            // 嘗試透過 Scheme 開啟 Visit Busan Pass App，若無安裝則轉向官方網站
+            const appUrl = "visitbusanpass://";
+            const webUrl = "https://www.visitbusanpass.com/";
+
+            if (isIOS) {
+                const start = Date.now();
+                window.location.href = appUrl;
+                setTimeout(function() {
+                    if (Date.now() - start < 2000) {
+                        window.open(webUrl, '_blank');
+                    }
+                }, 1500);
+            } else {
+                window.open(webUrl, '_blank');
+            }
+        }
         /* 手勢切換與 iOS Modal 滑動關閉 */
         let touchstartX = 0, touchendX = 0;
         document.addEventListener('touchstart', e => { touchstartX = e.changedTouches[0].screenX; }, { passive: true });
