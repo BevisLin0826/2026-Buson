@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>2026 釜山親子 slow travel 導航助理</title>
+    <title>2026 釜山親子 slow travel 導航助理 V13.0</title>
     <!-- Leaflet.js 地圖庫 (解決 L undefined 問題) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -1109,126 +1109,123 @@
                 ]
             },
             2: {
-                title: "古寺、賽車、海景平交道與夕陽膠囊列車",
-                nodes: [
-                    { 
-                        time: "09:00 - 09:40", 
-                        title: "海雲台 Dal-An 房源出發 ➔ 影島白淺灘文化村 🌊", 
-                        addr: "Huinnyeoul Culture Village", 
-                        nmapAddr: "흰여울문화마을",
-                        stay: "35min", 
-                        guide: "【跨區移動】搭乘 Jumbo Taxi / 大型計程車直達影島（車程約 35 分鐘）。" 
-                    },
-                    { 
-                        time: "09:40 - 12:00", 
-                        title: "白淺灘文化村懸崖上層散策 & 海景咖啡廳 ☕", 
-                        addr: "Huinnyeoul Culture Village", 
-                        nmapAddr: "흰여울문화마을",
-                        stay: "2.5hr", 
-                        guide: "【重點貼士】絕影海岸散步路階梯極多且陡峭，嚴禁推車！請全程留在懸崖上方「馬路主幹道平路」散步與拍照。" 
-                    },
-                    {
-                        isBranchSelector: true,
-                        title: "🔀 離開白淺灘時：請選擇下午 Cable Car 纜車動線支線"
-                    },
-                    // ===== 支線 A：【逆向纜車方案】（預設首選） =====
-                    {
-                        branch: "A",
-                        time: "12:00 - 12:20",
-                        title: "【支線 A】短程移動：白淺灘 ➔ 岩南公園 🚖",
-                        addr: "Amnam Park",
-                        nmapAddr: "암남공원",
-                        stay: "15min",
-                        guide: "搭乘計程車跨越南港大橋直達岩南公園（車程約 15 分鐘，小孩在車上休息）。"
-                    },
-                    {
-                        branch: "A",
-                        time: "12:20 - 14:00",
-                        title: "【支線 A】岩南公園 & 龍宮雲橋 & 午餐 🍴",
-                        isDining: true,
-                        options: [
-                            { name: "岩南公園 1F/3F 美食街", info: "首選：熱騰騰不辣海鮮刀削麵、烏龍麵與魚糕湯，座位寬敞，適合幼兒泡飯與吃飽後在推車上順暢午睡。", dish: "海鮮刀削麵 / 烏龍麵", addr: "Amnam Park", nmapAddr: "암남공원", isPrimary: true },
-                            { name: "岩南公園烤貝帳篷街 (崔氏烤貝/海生家)", info: "備案：烤貝拼盤附贈起司大蝦、漢堡排與起司拉麵，甜鹹口味 4 歲小孩非常喜歡。", dish: "起司大蝦 / 漢堡排", addr: "Amnam Park", nmapAddr: "암남공원", isPrimary: false }
-                        ]
-                    },
-                    {
-                        branch: "A",
-                        time: "14:00 - 14:40",
-                        title: "【支線 A】松島海上纜車 (逆向：岩南公園站 ➔ 松島灣站) 🪟",
-                        addr: "Songdo Cable Car Amnam Park",
-                        nmapAddr: "송도해상케이블카",
-                        stay: "40min",
-                        guide: "【逆向策略】採用逆向策略完全免排隊，隨到隨直接登上水晶透明車廂。"
-                    },
-                    {
-                        branch: "A",
-                        time: "14:40 - 15:40",
-                        title: "【支線 A】松島天空步道 漫步 🌉",
-                        addr: "Songdo Skywalk",
-                        nmapAddr: "송도구름산책로",
-                        stay: "1hr",
-                        guide: "漫步松島天空步道，由下往上仰望海景與天空中穿梭的纜車。"
-                    },
+            title: "白淺灘、影島海女村、松島纜車與南浦洞",
+            nodes: [
+                { 
+                    time: "09:00 - 09:40", 
+                    title: "海雲台 Dal-An 房源出發 ➔ 影島白淺灘文化村 🌊", 
+                    addr: "Huinnyeoul Culture Village", 
+                    stay: "35min", 
+                    guide: "【跨區移動】搭乘 Jumbo Taxi / 大型計程車直達影島（車程約 35 分鐘）[cite: 1, 2]。" 
+                },
+                { 
+                    time: "09:40 - 11:30", 
+                    title: "白淺灘文化村懸崖上層散策 & 海景咖啡廳 ☕", 
+                    addr: "Huinnyeoul Culture Village", 
+                    stay: "1.9hr", 
+                    guide: "【注意事項】絕影海岸散步路階梯極多且陡峭，嚴禁推車！請全程留在懸崖上方平路散步與拍照[cite: 1, 2]。" 
+                },
+                {
+                    isBranchSelector: true,
+                    title: "🔀 離開白淺灘時：請選擇下午纜車動線支線"
+                },
 
-                    // ===== 支線 B：【順向纜車方案】 =====
-                    {
-                        branch: "B",
-                        time: "12:00 - 12:20",
-                        title: "【支線 B】短程移動：白淺灘 ➔ 松島灣站 🚖",
-                        addr: "Songdo Sea Cable Car",
-                        nmapAddr: "송도해상케이블카",
-                        stay: "15min",
-                        guide: "搭乘計程車跨越南港大橋直達松島海水浴場/松島灣站（車程約 15 分鐘）。"
-                    },
-                    {
-                        branch: "B",
-                        time: "12:20 - 13:20",
-                        title: "【支線 B】松島天空步道 漫步 🌉",
-                        addr: "Songdo Skywalk",
-                        nmapAddr: "송도구름산책로",
-                        stay: "1hr",
-                        guide: "漫步松島天空步道，欣賞海上雕像與腳下清澈海景。"
-                    },
-                    {
-                        branch: "B",
-                        time: "13:20 - 14:20",
-                        title: "【支線 B】松島海上纜車 (順向：松島灣站 ➔ 岩南公園站) 🪟",
-                        addr: "Songdo Sea Cable Car",
-                        nmapAddr: "송도해상케이블카",
-                        stay: "1hr",
-                        guide: "【注意事項】上午/午後順向排隊人潮較多（特別是水晶車廂），建議預留 30~40 分鐘排隊等待時間。"
-                    },
-                    {
-                        branch: "B",
-                        time: "14:20 - 15:40",
-                        title: "【支線 B】岩南公園 & 龍宮雲橋 & 午餐/早午餐 🍴",
-                        isDining: true,
-                        options: [
-                            { name: "松島海水浴場沿海 - 本粥 (본죽)", info: "首選：營養海鮮粥、牛肉蔬菜粥，質地軟爛溫和，1 歲與 4 歲幼兒的最佳營養選擇。", dish: "海鮮粥 / 牛肉蔬菜粥", addr: "본죽 송도점", nmapAddr: "본죽 송도점", isPrimary: true },
-                            { name: "岩南公園纜車站 1F 美食街", info: "備案：熱烏龍麵、魚糕湯與韓式炸雞。", dish: "烏龍麵 / 韓式炸雞", addr: "Amnam Park", nmapAddr: "암남공원", isPrimary: false }
-                        ]
-                    },
+                // ===== 支線 A：【逆向纜車方案】 =====
+                {
+                    branch: "A",
+                    time: "11:30 - 12:00",
+                    title: "【支線 A】短程移動：白淺灘 ➔ 岩南公園 🚖",
+                    addr: "Amnam Park",
+                    stay: "15min",
+                    guide: "搭乘計程車直達岩南公園（車程約 15 分鐘）[cite: 1, 2]。"
+                },
+                {
+                    branch: "A",
+                    time: "12:00 - 14:00",
+                    title: "【支線 A】岩南公園 & 龍宮雲橋 & 午餐 🍴",
+                    isDining: true,
+                    options: [
+                        { name: "岩南公園 美食街 / 烤貝帳篷街", info: "提供不辣海鮮刀削麵、烏龍麵與起司烤貝熟食[cite: 1, 2]。", dish: "海鮮刀削麵 / 起司大蝦", addr: "Amnam Park", isPrimary: true }
+                    ]
+                },
+                {
+                    branch: "A",
+                    time: "14:00 - 14:40",
+                    title: "【支線 A】松島海上纜車 (逆向：岩南公園站 ➔ 松島灣站) 🪟",
+                    addr: "Songdo Cable Car Amnam Park",
+                    stay: "40min",
+                    guide: "採用逆向策略免排隊，隨到隨登水晶車廂[cite: 1, 2]。"
+                },
 
-                    // ===== 公用結尾：南浦洞與晚餐 =====
-                    {
-                        time: "15:40 - 18:30",
-                        title: "南浦洞商圈 & 必逛巡禮 (ABC-MART / ARTBOX / Olive Young) 🛍️",
-                        addr: "BIFF Square",
-                        nmapAddr: "BIFF광장",
-                        stay: "2.5hr",
-                        guide: "【必逛亮點】擁有完整 2.5 小時採買：<br>1. <b>ABC-MART Grand Stage</b>：全釜山最大鞋款旗艦店<br>2. <b>ARTBOX</b>：可愛卡通 IP 周邊與 Bath Bomb 泡澡球（買給 4 歲大女兒當獎勵）<br>3. <b>樂天百貨光復店 5F</b>：頂級五星級育嬰室備案<br>4. <b>BIFF 廣場</b>：現煎元祖黑糖堅果糖餅"
-                    },
-                    {
-                        time: "18:30 - 20:00",
-                        title: "晚餐：富平豬腳一條街 🍖",
-                        isDining: true,
-                        options: [
-                            { name: "漢陽豬腳 (한양족발)", info: "首選：招牌原味豬腳肉質 Q 彈薄切、不油不辣，附贈溫和豆腐湯與沙發座。", dish: "原味豬腳", addr: "한양족발", nmapAddr: "한양족발", isPrimary: true },
-                            { name: "釜山豬腳 (부산족발)", info: "備案：老字號涼拌與原味豬腳，在地人熱門選擇。", dish: "原味豬腳", addr: "부산족발", nmapAddr: "부산족발", isPrimary: false }
-                        ]
-                    }
-                ]
-            },
+                // ===== 支線 B：【影島海女村午餐 + 順向纜車來回方案】(微調更新) =====
+                {
+                    branch: "B",
+                    time: "11:30 - 11:45",
+                    title: "【支線 B】移動：白淺灘文化村 ➔ 影島海女文化展覽館 (海女村) 🚖",
+                    addr: "Yeongdo Haenyeo Cultural Center",
+                    stay: "15min",
+                    guide: "離開白淺灘後搭乘計程車前往影島海女村（車程約 10-15 分鐘）。"
+                },
+                {
+                    branch: "B",
+                    time: "11:45 - 13:15",
+                    title: "【支線 B】影島海女村午餐 🌊🦪",
+                    isDining: true,
+                    options: [
+                        { name: "影島海女水產水產文化館 (영도해녀문화전시관)", info: "首選：臨海享用現切新鮮鮑魚、海膽、螺肉與熱騰騰的海鮮拉麵/紫菜飯捲，景色絕佳！", dish: "海膽紫菜飯捲 / 海鮮拉麵 / 活鮑魚", addr: "영도해녀문화전시관", isPrimary: true }
+                    ]
+                },
+                {
+                    branch: "B",
+                    time: "13:15 - 13:35",
+                    title: "【支線 B】跨海移動：影島海女村 ➔ 松島灣站 (松島纜車) 🚖",
+                    addr: "Songdo Sea Cable Car",
+                    stay: "20min",
+                    guide: "搭乘計程車跨越南港大橋直達松島灣站（車程約 15-20 分鐘）。"
+                },
+                {
+                    branch: "B",
+                    time: "13:35 - 14:15",
+                    title: "【支線 B】松島海上纜車 (去程：松島灣站 ➔ 岩南公園站) 🚠",
+                    addr: "Songdo Sea Cable Car",
+                    stay: "40min",
+                    guide: "搭乘水晶車廂橫跨松島海面，飽覽海景與海岸峭壁風光[cite: 1, 2]。"
+                },
+                {
+                    branch: "B",
+                    time: "14:15 - 15:40",
+                    title: "【支線 B】岩南公園散策 & 龍宮天空步道 🌉",
+                    addr: "Songdo Yonggung Suspension Bridge",
+                    stay: "1.3hr",
+                    guide: "抵達岩南站後，漫步岩南公園恐龍廣場放電，並體驗延伸至海中的龍宮天空步道[cite: 1, 2]。"
+                },
+                {
+                    branch: "B",
+                    time: "15:40 - 16:10",
+                    title: "【支線 B】松島海上纜車 (回程：岩南公園站 ➔ 松島灣站) 🚠",
+                    addr: "Songdo Cable Car Amnam Park",
+                    stay: "30min",
+                    guide: "搭乘回程纜車返回松島灣站[cite: 1, 2]。"
+                },
+
+                // ===== 公用結尾：南浦洞與晚餐 =====
+                {
+                    time: "16:10 - 18:30",
+                    title: "南浦洞商圈 & 必逛巡禮 (ABC-MART / ARTBOX / Olive Young) 🛍️",
+                    addr: "BIFF Square",
+                    stay: "2.3hr",
+                    guide: "採買鞋款、IP 泡澡球，並享用 BIFF 廣場黑糖堅果糖餅[cite: 1, 2]。"
+                },
+                {
+                    time: "18:30 - 20:00",
+                    title: "晚餐：富平豬腳一條街 🍖",
+                    isDining: true,
+                    options: [
+                        { name: "漢陽豬腳 (한양족발)", info: "首選：原味豬腳肉質 Q 彈薄切、不油不辣，適合幼兒[cite: 1, 2]。", dish: "原味豬腳", addr: "한양족발", isPrimary: true }
+                    ]
+                }
+            ]
+        },
             3: {
                 title: "秋日賞楓、百貨充放電與廣安大橋夜景",
                 nodes: [
@@ -1365,77 +1362,109 @@
                 ]
             },
             4: {
-                title: "古寺巡禮、海景平交道與夕陽天空膠囊列車",
-                nodes: [
-                    { 
-                        time: "09:30 - 10:00", 
-                        title: "海雲台 Dal-An 房源出發 ➔ 海東龍宮寺 🚖", 
-                        addr: "Haedong Yonggungsa Temple", 
-                        nmapAddr: "해동용궁사",
-                        stay: "30min", 
-                        guide: "【跨區移動】自 Dal-An 房源門口搭乘 Kakao T 大型計程車 (Jumbo Taxi) 直達海東龍宮寺（車程約 20 分鐘）。" 
-                    },
-                    { 
-                        time: "10:00 - 11:40", 
-                        title: "海東龍宮寺參拜 & 海岸觀景 ⛩️", 
-                        addr: "Haedong Yonggungsa Temple", 
-                        nmapAddr: "해동용궁사",
-                        stay: "1.7hr", 
-                        guide: "【⚠️ 推車重要提醒】寺廟入口有 108 階陡峭石階，<b>推車完全無法推進去</b>！請將推車寄放於入口，改用揹巾揹 1 歲妹妹，4 歲大女兒由大人牽著走。<br>💡 <b>彈性備案：</b>若龍宮寺因階梯走完提早結束，請勿去耗體力的 Outlet，直接提早前往青沙浦喝咖啡看海！" 
-                    },
-                    { 
-                        time: "11:40 - 13:00", 
-                        title: "午餐：龍宮海鮮炸醬麵 (용궁해물쟁반짜장) 🍜", 
-                        isDining: true, 
-                        options: [
-                            { name: "龍宮海鮮炸醬麵 (용궁해물쟁반짜장)", info: "首選：寺外斜坡步行 5 分鐘。招牌黑醬炸醬麵鹹甜不辣、糖醋肉外酥內軟，孩子接受度 100%。", dish: "海鮮醬炸醬麵 / 糖醋肉", addr: "용궁해물쟁반짜장", nmapAddr: "용궁해물쟁반짜장", isPrimary: true },
-                            { name: "海東龍宮寺入口小吃攤街", info: "備案：現煮魚糕串、熱高湯與韓式雞蛋糕，適合快速墊胃。", dish: "魚糕串 / 雞蛋糕", addr: "Haedong Yonggungsa Temple", nmapAddr: "해동용궁사", isPrimary: false }
-                        ]
-                    },
-                    { 
-                        time: "13:00 - 13:15", 
-                        title: "短程移動：龍宮寺 ➔ 青沙浦 🚖", 
-                        addr: "Cheongsapo", 
-                        nmapAddr: "청사포",
-                        stay: "15min", 
-                        guide: "吃飽後搭乘計程車直達青沙浦（車程僅約 10 分鐘，車資約 6,000 韓元）。" 
-                    },
-                    { 
-                        time: "13:15 - 15:40", 
-                        title: "青沙浦深度散策 & 海景咖啡廳 (小孩午睡充電影) 📸", 
-                        addr: "Cheongsapo", 
-                        nmapAddr: "청사포",
-                        stay: "2.4hr", 
-                        guide: "【青沙浦亮點指南】<br>1. <b>韓版灌籃高手平交道</b>：等候海岸列車通過拍攝絕美海景。<br>2. <b>紅白雙燈塔</b>：防波堤平坦步道，推車極度舒適。<br>3. <b>踏石展望台 (Skywalk)</b>：高空俯瞰清澈海水。<br>4. <b>海景咖啡廳 (H.US Coffee / Alice Donut)</b>：大片落地窗正對海景，大人喝咖啡，<b>讓 1 歲與 4 歲孩子在推車上順暢午睡補眠</b>。" 
-                    },
-                    { 
-                        time: "16:10 - 17:00", 
-                        title: "🚨 核心重頭戲：天空膠囊列車 (青沙浦站 ➔ 尾浦站，預約 16:30 班次) 🚃", 
-                        addr: "Cheongsapo Station", 
-                        nmapAddr: "청사포정거장",
-                        stay: "50min", 
-                        guide: "【黃金夕陽班次】按車廂發售（請預訂 2 台 4人座車廂，1歲妹妹不佔位）。車廂行駛於靠海側軌道，坐在車內直擊金色海面與夕陽落日！" 
-                    },
-                    { 
-                        time: "17:00 - 18:00", 
-                        title: "尾浦舊鐵道木棧步道散策 (Green Railway) 🌊", 
-                        addr: "Mipo Station", 
-                        nmapAddr: "미포정거장",
-                        stay: "1hr", 
-                        guide: "【尾浦延伸路線】抵達尾浦站後，沿著全新鋪設的海濱木棧道 (Green Railway) 向海雲台方向慢散步。<b>完全無障礙無階梯，推車極度友善</b>！可打卡 LCT 摩天大樓海岸天際線。" 
-                    },
-                    { 
-                        time: "18:00 - 19:30", 
-                        title: "晚餐：海雲台伍班長烤肉 (오반장) 🥩", 
-                        isDining: true, 
-                        options: [
-                            { name: "伍班長烤肉 (오반장)", info: "首選：尾浦散步 10 分鐘即達古南路巷內。經典炭火烤肉，烤盤外圈免費贈送嫩甜蒸蛋與不辣豬肉，小孩超愛！", dish: "炭火烤豬五花 / 邊緣甜蒸蛋", addr: "오반장", nmapAddr: "오반장", isPrimary: true },
-                            { name: "海雲台傳統市場豬肉湯飯", info: "備案：清甜大骨高湯與去油豬肉片，配飯溫和不辣，吃完直接回房。", dish: "豬肉湯飯", addr: "해운대 전통시장", nmapAddr: "해운대시장", isPrimary: false }
-                        ]
-                    }
-                ]
-            },
-            5: {
+            title: "海岸列車風景、海東龍宮寺與夕陽天空膠囊列車",
+            nodes: [
+                { 
+                    time: "09:15 - 09:30", 
+                    title: "海雲台 Dal-An 房源出發 ➔ 尾浦站 (Mipo Station) 🚶‍♂️", 
+                    addr: "Mipo Station", 
+                    stay: "15min", 
+                    guide: "自房源徒步或搭短程計程車前往尾浦車站[cite: 1, 2, 3]。" 
+                },
+                { 
+                    time: "09:30 - 10:10", 
+                    title: "海雲台海岸列車 (尾浦站 ➔ 松亭站) 🚃", 
+                    addr: "Mipo Station", 
+                    stay: "40min", 
+                    guide: "【體驗列車風光】搭乘海岸列車沿著松林與海岸線慢行至終點「松亭站」，全景窗欣賞沿途藍海景緻[cite: 1, 3]。" 
+                },
+                { 
+                    time: "10:10 - 10:25", 
+                    title: "轉乘計程車：松亭站 ➔ 海東龍宮寺 🚖", 
+                    addr: "Songjeong Station", 
+                    stay: "15min", 
+                    guide: "於松亭站出站後，直接搭乘計程車前往海東龍宮寺（車程僅約 10 分鐘，省時便利）。" 
+                },
+                { 
+                    time: "10:25 - 11:50", 
+                    title: "海東龍宮寺參拜 & 海岸觀景 ⛩️", 
+                    addr: "Haedong Yonggungsa Temple", 
+                    stay: "1.4hr", 
+                    guide: "【⚠️ 推車提醒】入口有陡峭石階，請將推車寄放於入口，改用揹巾或牽手步行[cite: 1, 2, 5]。" 
+                },
+                {
+                    time: "12:00 - 13:00",
+                    title: "午餐：龍宮海鮮炸醬麵 (용궁해물쟁반짜장) 🍜",
+                    isDining: true,
+                    options: [
+                { 
+                    name: "龍宮海鮮炸醬麵 (용궁해물쟁반짜장)", 
+                    info: "首選：位於龍宮寺出口斜坡步行 5 分鐘。招牌黑醬炸醬麵鹹甜不辣、糖醋肉外酥內軟，孩子接受度 100%。", 
+                    dish: "海鮮醬炸醬麵 / 糖醋肉", 
+                    addr: "Yonggung Haemul Jajangmyeon", 
+                    isPrimary: true 
+                },
+                { 
+                    name: "海東龍宮寺入口小吃攤街", 
+                    info: "備案：現煮魚糕串、熱高湯與韓式雞蛋糕，適合快速墊胃。", 
+                    dish: "魚糕串 / 雞蛋糕", 
+                    addr: "Haedong Yonggungsa Temple", 
+                    isPrimary: false 
+                }
+            ]
+        },
+                { 
+                    time: "13:00 - 13:15", 
+                    title: "短程移動：龍宮寺 ➔ 青沙浦 🚖", 
+                    addr: "Cheongsapo", 
+                    stay: "15min", 
+                    guide: "搭乘計程車前往青沙浦（車程僅約 10 分鐘）[cite: 1, 3]。" 
+                },
+                { 
+                    time: "13:15 - 15:40", 
+                    title: "青沙浦深度散策 & 海景咖啡廳 (小孩午睡) 📸", 
+                    addr: "Cheongsapo", 
+                    stay: "2.4hr", 
+                    guide: "【青沙浦亮點指南】<br>1. <b>韓版灌籃高手平交道</b>：等候海岸列車通過拍攝絕美海景。<br>2. <b>紅白雙燈塔</b>：防波堤平坦步道，推車極度舒適。<br>3. <b>踏石展望台 (Skywalk)</b>：高空俯瞰清澈海水。<br>4. <b>海景咖啡廳 (H.US Coffee / Alice Donut)</b>：大片落地窗正對海景，大人喝咖啡，<b>讓 1 歲與 4 歲孩子在推車上順暢午睡補眠</b>。" 
+                },
+                { 
+                    time: "16:30 - 17:00", 
+                    title: "🚨 天空膠囊列車 (青沙浦站 ➔ 尾浦站，預約 16:30 班次) 🚃", 
+                    addr: "Cheongsapo Station", 
+                    stay: "50min", 
+                    guide: "【黃金夕陽班次】車廂行駛於靠海側軌道，直擊金色海面與夕陽落日[cite: 1, 3, 4]！" 
+                },
+                { 
+                    time: "16:30 - 17:30", 
+                    title: "尾浦舊鐵道木棧步道散策 (Green Railway) 🌊", 
+                    addr: "Mipo Station", 
+                    stay: "1hr", 
+                    guide: "抵達尾浦站後，沿著平坦無障礙的海濱木棧道散步，打卡 LCT 摩天大樓天際線[cite: 1, 2]。" 
+                },
+                {
+                    time: "16:30 - 18:30",
+                    title: "晚餐：海雲台伍班長烤肉 (오반장) 🥩",
+                    isDining: true,
+                    options: [
+                { 
+                    name: "伍班長烤肉 (오반장)", 
+                    info: "首選：尾浦站下車後步行 10 分鐘。經典炭火烤肉，烤盤外圈免費贈送嫩甜蒸蛋與不辣豬肉，小孩超級愛吃；氣氛輕鬆。", 
+                    dish: "炭火烤豬五花 / 甜蒸蛋", 
+                    addr: "Obanjiang", 
+                    isPrimary: true 
+                },
+                { 
+                    name: "海雲台傳統市場豬肉湯飯一條街", 
+                    info: "備案：清甜大骨高湯與去油豬肉片，配飯溫和不辣。", 
+                    dish: "豬肉湯飯", 
+                    addr: "11 Gunam-ro 41beon-gil, Haeundae, Busan", 
+                    isPrimary: false 
+                }
+            ]
+        }
+            ]
+        },
+        5: {
                 title: "海雲台海洋館、100樓觀景台、冬柏島與 The Bay 101 落日夜景",
                 nodes: [
                     {
