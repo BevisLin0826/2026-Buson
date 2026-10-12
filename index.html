@@ -226,7 +226,26 @@
         .tool-btn:active {
             transform: scale(0.92);
         }
+        /* 伴手禮地圖外框容器 */
+        .modal-sticky-map-wrapper {
+            position: relative;
+            width: 100%;
+            height: 180px; /* 確定給予實體高度 */
+            border-radius: 14px;
+            overflow: hidden;
+            margin: 8px 0 12px 0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+            background: #E5E5EA;
+            z-index: 10;
+        }
 
+        /* 伴手禮 Leaflet 地圖實體 */
+        #souvenir-map { 
+            width: 100% !important; 
+            height: 180px !important; 
+            position: relative;
+            z-index: 1;
+        }
         /* 地圖定位按鈕 */
         .food-map-container {
             position: relative;
@@ -598,7 +617,7 @@
         <button class="tool-btn" onclick="showModal('care')">👶 育兒必看</button>
         <button class="tool-btn" onclick="showModal('housing')">🏡 住宿交通</button>
         <button class="tool-btn" onclick="showModal('tickets')">🎟️ 門票與 PASS</button>
-        <button class="tool-btn" onclick="showModal('momGuide')">👩‍👦 獨家出關會合</button>	
+        <button class="tool-btn" onclick="showModal('souvenir')" style="background:rgba(255, 149, 0, 0.08); border:1px solid rgba(255, 149, 0, 0.3); color:#D35400;">🎁 伴手禮攻略</button>	
         <button class="tool-btn" onclick="showModal('food')">🍱 美食地圖</button>
         <button class="tool-btn" onclick="showModal('sos')">🆘 救急韓文/SOS</button>
     </div>
@@ -813,17 +832,206 @@
         <div id="foodListContainer"></div>
     </div>
 
-    <!-- Modal 5: 入境與航班 -->
-    <div id="entry-modal" class="modal">
+    <!-- Modal 4: 伴手禮與個人採買地圖 -->
+    <div id="souvenir-modal" class="modal">
         <div class="modal-handle"></div>
-        <span class="close-x" onclick="hideModal('entry')">✕</span>
-        <h2 style="margin-bottom: 15px; font-weight:900;">✈️ 航班與人員資料速查</h2>
-        <table class="info-table">
-            <tr><th>大部隊去程</th><td>中華航空 CI188 (10/31 07:40 T1 ➔ 10:50 金海 I)</td></tr>
-            <tr><th>媽媽晚出發</th><td>中華航空 CI188 (11/01 07:40 T1 ➔ 10:50 金海 I)</td></tr>
-            <tr><th>全團回程</th><td>中華航空 CI189 (11/07 11:50 金海 I ➔ 13:30 T1)</td></tr>
-            <tr><th>團體成員</th><td>6 成人、2 兒童 (含4歲)、1 嬰幼兒 (1歲)，共 9 人</td></tr>
-        </table>
+        <span class="close-x" onclick="hideModal('souvenir')">✕</span>
+        <h2 style="color:var(--text-dark); margin-bottom: 8px; font-weight: 900; font-size:16px;">🎁 釜山伴手禮與個人採買地圖</h2>
+        
+        <!-- 頂部固定地圖 (Leaflet) -->
+        <div class="modal-sticky-map-wrapper">
+            <div id="souvenir-map" style="width:100%; height:100%;"></div>
+            <button class="locate-me-btn" onclick="locateUserInSouvenirMap()">📍 我的位置</button>
+        </div>
+
+        <!-- 地圖標記圖例 (已移除分類2零食) -->
+        <div class="map-legend" style="display:flex; gap:10px; margin-bottom:10px; font-size:10px; font-weight:bold; background:rgba(0,0,0,0.03); padding:8px; border-radius:10px;">
+            <div class="legend-item"><span class="dot-icon" style="background:#FF3B30; display:inline-block; width:10px; height:10px; border-radius:50%;"></span> 🔴 1. 個人採買/潮牌/樂高</div>
+            <div class="legend-item"><span class="dot-icon" style="background:#0A84FF; display:inline-block; width:10px; height:10px; border-radius:50%;"></span> 🔵 3. 人氣 IP 門市</div>
+            <div class="legend-item"><span class="dot-icon" style="background:#34C759; display:inline-block; width:10px; height:10px; border-radius:50%;"></span> 🟢 4. 在地名店/甜點</div>
+        </div>
+
+        <!-- 海關與信用卡優惠提醒 -->
+        <div class="guide-box" style="background: rgba(255, 95, 86, 0.08); border-left: 4px solid #FF5F56; color: #9E2A2B; margin-bottom: 12px; font-size:11px; line-height:1.5;">
+            ⚠️ <b>海關與結帳重要提醒：</b><br>
+            • <b>海關禁令</b>：購買<b>古來思魚糕</b>帶回台灣，<b>切記不可選購含有肉類（如香腸、熱狗、培根、火腿）的款式</b>[cite: 1, 3]！<br>
+            • <b>刷卡最佳化</b>：實體專櫃結帳選<b>韓元 (KRW)</b>，刷<b>玉山 Unicard (UP 選) 享 4.5% 高回饋</b>！
+        </div>
+        
+        <!-- 2. 伴手禮與零食清單 (表格呈現，不放單一店家地圖) -->
+        <div class="card" style="margin-bottom: 12px; border-left: 4px solid #FF9500;">
+            <strong style="color:#FF9500; font-size:14px; display:block; margin-bottom:8px;">🍬 2. 零食與伴手禮採買清單</strong>
+            
+            <table class="info-table" style="font-size:11px;">
+                <thead>
+                    <tr>
+                        <th>品項名稱</th>
+                        <th>韓國單價</th>
+                        <th>折合台幣</th>
+                        <th>台灣參考價</th>
+                        <th>採買地點與貼士</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><b>CU 杜拜巧克力Q餅</b></td>
+                        <td>₩3,600</td>
+                        <td><b>NT$ 85</b></td>
+                        <td>NT$ 180~220</td>
+                        <td>全韓國 CU 便利商店（爆紅極度搶手，路過隨時掃貨）。</td>
+                    </tr>
+                    <tr>
+                        <td><b>IMINT 咖啡糖</b></td>
+                        <td>₩2,000</td>
+                        <td><b>NT$ 45</b></td>
+                        <td>NT$ 80~100</td>
+                        <td>【D7】西面 Homeplus 量販超市 B1F / Daiso 大創（辦公室隨手發送）。</td>
+                    </tr>
+                    <tr>
+                        <td><b>樂天 Zero 水果軟糖</b></td>
+                        <td>₩1,800</td>
+                        <td><b>NT$ 40</b></td>
+                        <td>NT$ 75~90</td>
+                        <td>【D7】Homeplus 超市 / 樂天超市（無糖零熱量，水蜜桃/奇異果風味）。</td>
+                    </tr>
+                    <tr>
+                        <td><b>樂天 青葡萄糖果</b></td>
+                        <td>₩2,500</td>
+                        <td><b>NT$ 56</b></td>
+                        <td>NT$ 99</td>
+                        <td>【D7】Homeplus 超市 / 超商（經典濃郁果汁硬糖，大容量包裝）。</td>
+                    </tr>
+                    <tr>
+                        <td><b>樂天 養樂多軟糖</b></td>
+                        <td>₩1,500</td>
+                        <td><b>NT$ 34</b></td>
+                        <td>NT$ 60~70</td>
+                        <td>【D7】Homeplus 超市（可愛養樂多瓶造型，帶給 4 歲與 1 歲小朋友的最愛[cite: 8]）。</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 3. 人氣 IP 官方門市與周邊 -->
+        <div class="card" style="margin-bottom: 12px; border-left: 4px solid #0A84FF;">
+            <strong style="color:#0A84FF; font-size:14px; display:block; margin-bottom:8px;">🧸 3. 人氣 IP 官方門市 (含 Nmap 導航)</strong>
+            
+            <div style="margin-bottom: 8px; padding: 8px; background: rgba(0,0,0,0.02); border-radius: 12px;">
+                <div style="font-size:13px; font-weight:bold; color:var(--text-dark);">• KAKAO FRIENDS 釜山旗艦店</div>
+                <small style="color:var(--text-muted); display:block; margin-bottom:4px;">📍 地點：【D2】南浦洞光復路（1F-4F 旗艦店，有釜山限定 Ryan 與海鷗周邊）。</small>
+                <div class="map-btn-group">
+                    <button class="map-btn naver" onclick="openNaverMap('카카오프렌즈 부산플래그십스토어')">🧭 Nmap</button>
+                    <button class="map-btn google" onclick="openGoogleMap('Kakao Friends Busan')">🗺️ Google Maps</button>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 5px; padding: 8px; background: rgba(0,0,0,0.02); border-radius: 12px;">
+                <div style="font-size:13px; font-weight:bold; color:var(--text-dark);">• LINE FRIENDS (BT21 & Minini)</div>
+                <small style="color:var(--text-muted); display:block; margin-bottom:4px;">📍 地點：【D3】新世界 Centum City 店 <b>6F</b> / 【D6】樂天西面總店 <b>7F</b> 專櫃。</small>
+                <div class="map-btn-group">
+                    <button class="map-btn naver" onclick="openNaverMap('라인프렌즈 신세계 센텀시티')">🧭 Nmap</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. 釜山在地甜點與特色名產 -->
+        <div class="card" style="margin-bottom: 5px; border-left: 4px solid #34C759;">
+            <strong style="color:#34C759; font-size:14px; display:block; margin-bottom:8px;">🧁 4. 釜山在地特色名店 (含 Nmap 導航)</strong>
+            
+            <div style="margin-bottom: 8px; padding: 8px; background: rgba(0,0,0,0.02); border-radius: 12px;">
+                <div style="font-size:12px; font-weight:bold; color:var(--text-dark);">• Busan Bada Sand (부산바다샌드)</div>
+                <div style="font-size:11px; color:#555;">海鹽焦糖奶油夾心餅乾，內餡融合在地蜂巢蜂蜜[cite: 1, 2, 3, 4]。📍 地點：海雲台站附近[cite: 1, 2, 3, 4]。</div>
+                <div class="map-btn-group">
+                    <button class="map-btn naver" onclick="openNaverMap('부산바다샌드')">🧭 Nmap</button>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 8px; padding: 8px; background: rgba(0,0,0,0.02); border-radius: 12px;">
+                <div style="font-size:12px; font-weight:bold; color:var(--text-dark);">• CHEFFLE 起司舒芙蕾 (치플레)</div>
+                <div style="font-size:11px; color:#555;">韓國甜點界香奈兒，冷凍吃像冰淇淋[cite: 1, 3, 4, 5]。📍 地點：新世界 Centum City 店 <b>B1F 美食街</b>[cite: 1, 3, 4, 5]。</div>
+                <div class="map-btn-group">
+                    <button class="map-btn naver" onclick="openNaverMap('치플레 센텀')">🧭 Nmap</button>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 5px; padding: 8px; background: rgba(0,0,0,0.02); border-radius: 12px;">
+                <div style="font-size:12px; font-weight:bold; color:var(--text-dark);">• 二代名菓 (이대명과)</div>
+                <div style="font-size:11px; color:#555;">60年老字號手工薄煎餅，送長輩首選[cite: 1, 3, 4]。📍 地點：南浦洞富平店 (1F) / 海雲台店[cite: 1, 3, 4]。</div>
+                <div class="map-btn-group">
+                    <button class="map-btn naver" onclick="openNaverMap('이대명과 해운대점')">🧭 Nmap</button>
+                </div>
+            </div>
+        </div>
+        <!-- 1. 個人指定預購與潮流鞋款 -->
+        <div class="card" style="margin-bottom: 12px; border-left: 4px solid #FF3B30;">
+            <strong style="color:#FF3B30; font-size:14px; display:block; margin-bottom:4px;">🛍️ 1. 個人專屬清單 (含退稅與刷卡估算)</strong>
+            <small style="color:var(--primary); font-size:11px; display:block; margin-bottom:8px; font-weight:bold;">💡 【西面地區掃貨提醒】：樂天百貨西面總店 5F/7F 集中了 LEGO(5F)、TNF白標(5F)、On跑鞋(5F)、Wacky WiLLy(7F) 與 Mardi！</small>
+            
+            <!-- LEGO 72154 -->
+            <div style="margin-bottom: 10px; padding: 8px; background: rgba(0,0,0,0.02); border-radius: 12px;">
+                <div style="font-size:13px; font-weight:bold; color:var(--text-dark);">• LEGO 盒組 72154 (樂高官方專賣店 LCS)</div>
+                <div style="font-size:11px; color:#555; margin:3px 0; line-height:1.4;">
+                    • 韓國定價：₩399,000 韓元<br>
+                    • 現場退稅價：約 ₩375,060 韓元 (<b>折合台幣約 NT$ 8,930</b>)<br>
+                    • 台灣市場參考價：約 NT$ 9,999 ~ 10,499 (現省約 NT$ 1,300+)
+                </div>
+                <small style="color:var(--text-muted); display:block; margin-bottom:4px;">📍 地點：【D3】新世界 Centum City 店 <b>3F 樂高專賣店</b> / 【D6】西面樂天百貨總店 <b>5F 樂高專賣店</b>。</small>
+                <div class="map-btn-group">
+                    <button class="map-btn naver" onclick="openNaverMap('레고스토어 롯데백화점 부산본점')">🧭 西面樂天 Nmap</button>
+                    <button class="map-btn naver" onclick="openNaverMap('레고스토어 신세계 센텀시티점')">🧭 Centum Nmap</button>
+                </div>
+            </div>
+
+            <!-- Salomon XT6 GTX -->
+            <div style="margin-bottom: 10px; padding: 8px; background: rgba(0,0,0,0.02); border-radius: 12px;">
+                <div style="font-size:13px; font-weight:bold; color:var(--text-dark);">• Salomon XT-6 GTX (越野跑鞋)</div>
+                <div style="font-size:11px; color:#555; margin:3px 0; line-height:1.4;">
+                    • 韓國定價：₩280,000 韓元 | 現場退稅價：約 ₩263,200 (<b>約 NT$ 6,260</b>)<br>
+                    • 台灣專櫃參考價：NT$ 6,980 ~ 7,280
+                </div>
+                <small style="color:var(--text-muted); display:block; margin-bottom:4px;">📍 地點：【D2】南浦洞光復路 Salomon 旗艦店 / 【D3】新世界 Centum <b>3F</b> / 【D6】ABC-MART 西面店。</small>
+                <div class="map-btn-group">
+                    <button class="map-btn naver" onclick="openNaverMap('살로몬 광복점')">🧭 南浦旗艦 Nmap</button>
+                    <button class="map-btn naver" onclick="openNaverMap('ABC마트 그랜드스테이지 서면점')">🧭 西面 ABC Nmap</button>
+                </div>
+            </div>
+
+            <!-- On cloudtilt -->
+            <div style="margin-bottom: 10px; padding: 8px; background: rgba(0,0,0,0.02); border-radius: 12px;">
+                <div style="font-size:13px; font-weight:bold; color:var(--text-dark);">• On Cloudtilt (昂跑 專業跑鞋)</div>
+                <div style="font-size:11px; color:#555; margin:3px 0; line-height:1.4;">
+                    • 韓國定價：₩229,000 韓元 | 現場退稅價：約 ₩215,260 (<b>約 NT$ 5,125</b>)<br>
+                    • 台灣專櫃參考價：NT$ 5,880
+                </div>
+                <small style="color:var(--text-muted); display:block; margin-bottom:4px;">📍 地點：【D3】新世界 Centum 店 <b>3F</b> / 【D6】樂天西面總店 <b>5F</b> / ABC-MART 西面店。</small>
+                <div class="map-btn-group">
+                    <button class="map-btn naver" onclick="openNaverMap('온러닝 신세계 센텀시티')">🧭 Centum Nmap</button>
+                    <button class="map-btn naver" onclick="openNaverMap('롯데백화점 부산본점')">🧭 西面樂天 Nmap</button>
+                </div>
+            </div>
+
+            <!-- TNF White Label -->
+            <div style="margin-bottom: 10px; padding: 8px; background: rgba(0,0,0,0.02); border-radius: 12px;">
+                <div style="font-size:13px; font-weight:bold; color:var(--text-dark);">• TNF White Label (The North Face 韓國限定白標)</div>
+                <div style="font-size:11px; color:#555; margin:3px 0;">【現場退稅】韓國限定獨家系列。</div>
+                <small style="color:var(--text-muted); display:block; margin-bottom:4px;">📍 地點：【D2】南浦洞光復路 TNF 大型旗艦店 / 【D6】樂天西面總店 <b>5F</b>。</small>
+                <div class="map-btn-group">
+                    <button class="map-btn naver" onclick="openNaverMap('노스페이스 광복점')">🧭 南浦旗艦 Nmap</button>
+                    <button class="map-btn naver" onclick="openNaverMap('노스페이스 롯데백화점 부산본점')">🧭 西面樂天 Nmap</button>
+                </div>
+            </div>
+
+            <!-- Mardi & Wacky WiLLy -->
+            <div style="margin-bottom: 5px; padding: 8px; background: rgba(0,0,0,0.02); border-radius: 12px;">
+                <div style="font-size:13px; font-weight:bold; color:var(--text-dark);">• Mardi Mercredi & Wacky WiLLy (韓系潮流服飾)</div>
+                <div style="font-size:11px; color:#555; margin:3px 0;">【現場退稅】經典花朵 T/衛衣與黃色笑臉人 Kiki 潮牌[cite: 5]。</div>
+                <small style="color:var(--text-muted); display:block; margin-bottom:4px;">📍 地點：【D3】Centum B2F / 【D6】樂天西面總店 <b>7F</b> / 田浦選區[cite: 5]。</small>
+                <div class="map-btn-group">
+                    <button class="map-btn naver" onclick="openNaverMap('마르디 메크르디 신세계 센텀시티')">🧭 Centum Nmap</button>
+                    <button class="map-btn naver" onclick="openNaverMap('롯데백화점 부산본점')">🧭 西面樂天 Nmap</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Modal 6: SOS 急救 -->
@@ -1789,7 +1997,98 @@
                 ]
             }
         };
+        // 伴手禮地圖與四大類別 Pin 標記資料庫
+        let souvenirMap = null;
+        let souvenirUserMarker = null;
 
+        // 伴手禮地圖 Pin 標記資料庫 (已剔除地點過多且分散的分類 2 零食)
+        const souvenirMapData = [
+            // ================= 🔴 分類 1: 個人採買/潮牌/樂高/鞋款 (紅色 Pin) =================
+            // 西面地區據點
+            { name: "樂高專賣店 / TNF白標 / On跑鞋 (西面樂天總店 5F)", lat: 35.1569, lng: 129.0556, category: 1 },
+            { name: "Mardi Mercredi / Wacky WiLLy (西面樂天總店 7F)", lat: 35.1571, lng: 129.0558, category: 1 },
+            { name: "ABC-MART Grand Stage (Salomon/On跑鞋 西面店)", lat: 35.1558, lng: 129.0585, category: 1 },
+            // Centum City 百貨據點 (微調經緯度避免點位完全重疊)
+            { name: "樂高專賣店 LCS (新世界 Centum 3F)", lat: 35.1689, lng: 129.1297, category: 1 },
+            { name: "On 昂跑 / Salomon (新世界 Centum 3F)", lat: 35.1691, lng: 129.1295, category: 1 },
+            { name: "Mardi Mercredi (新世界 Centum B2F)", lat: 35.1687, lng: 129.1299, category: 1 },
+            // 南浦洞地區據點
+            { name: "Salomon 薩洛蒙 (南浦光復旗艦店)", lat: 35.0998, lng: 129.0312, category: 1 },
+            { name: "The North Face 白標 (南浦光復旗艦店)", lat: 35.0995, lng: 129.0308, category: 1 },
+
+            // ================= 🔵 分類 3: 人氣 IP 官方門市 (藍色 Pin) =================
+            { name: "KAKAO FRIENDS 旗艦店 (南浦光復路 1F-4F)", lat: 35.0988, lng: 129.0305, category: 3 },
+            { name: "LINE FRIENDS (新世界 Centum 6F)", lat: 35.1690, lng: 129.1298, category: 3 },
+            { name: "LINE FRIENDS (西面樂天總店 7F)", lat: 35.1570, lng: 129.0557, category: 3 },
+
+            // ================= 🟢 分類 4: 釜山在地名店/甜點 (綠色 Pin) =================
+            { name: "Busan Bada Sand 海鹽焦糖餅 (海雲台店)", lat: 35.1618, lng: 129.1585, category: 4 },
+            { name: "CHEFFLE 起司舒芙蕾 (新世界 Centum B1F)", lat: 35.1688, lng: 129.1296, category: 4 },
+            { name: "二代名菓 手工煎餅 (海雲台店)", lat: 35.1610, lng: 129.1590, category: 4 },
+            { name: "二代名菓 手工煎餅 (南浦富平店)", lat: 35.1012, lng: 129.0260, category: 4 }
+        ];
+
+        function createColorIcon(color) {
+            return L.divIcon({
+                className: 'custom-div-icon',
+                html: `<div style="background-color:${color}; width:13px; height:13px; border-radius:50%; border:2px solid #fff; box-shadow:0 2px 6px rgba(0,0,0,0.4);"></div>`,
+                iconSize: [13, 13],
+                iconAnchor: [6.5, 6.5]
+            });
+        }
+
+        // 初始化並安全重繪伴手禮地圖
+        function initSouvenirMap() {
+            if (souvenirMap) {
+                // 若地圖已建立，延遲 100ms 強制刷新容器尺寸，解決彈窗展現時的灰色白屏問題
+                setTimeout(() => {
+                    souvenirMap.invalidateSize();
+                }, 100);
+                return;
+            }
+
+            try {
+                if (typeof L !== 'undefined') {
+                    souvenirMap = L.map('souvenir-map', { zoomControl: false }).setView([35.1569, 129.0856], 11);
+                    
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        maxZoom: 18,
+                        attribution: '© OpenStreetMap'
+                    }).addTo(souvenirMap);
+
+                    // 繪製 Markers (1:紅, 3:藍, 4:綠)
+                    souvenirMapData.forEach(item => {
+                        let color = '#FF3B30'; // 分類 1 (紅)
+                        if (item.category === 3) color = '#0A84FF'; // 分類 3 (藍)
+                        if (item.category === 4) color = '#34C759'; // 分類 4 (綠)
+
+                        L.marker([item.lat, item.lng], { icon: createColorIcon(color) })
+                            .addTo(souvenirMap)
+                            .bindPopup(`<b>${item.name}</b>`);
+                    });
+
+                    // 初次建立完成後二次確保尺寸更新
+                    setTimeout(() => {
+                        souvenirMap.invalidateSize();
+                    }, 200);
+                }
+            } catch (e) {
+                console.log("伴手禮地圖加載異常:", e);
+            }
+        }
+
+        // 修改既有的 showModal 觸發機制
+        const originalShowModal = showModal;
+        showModal = function(id) {
+            if (typeof originalShowModal === 'function') originalShowModal(id);
+            
+            if (id === 'souvenir') {
+                // 等待 Modal 動畫展開後（約 200ms）再進行地圖渲染與尺寸重繪
+                setTimeout(() => {
+                    initSouvenirMap();
+                }, 200);
+            }
+        };
         // 媽媽 (HaoChun + MuTong) 晚一天出發專屬前三天行程 (D1 ~ D3)
         const momTripData = {
             1: {
