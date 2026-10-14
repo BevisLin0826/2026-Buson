@@ -512,15 +512,34 @@
             transform: translateY(0);
         }
 
+        /* 頂部抓手：加大觸控防呆範圍，提示可下滑 */
         .modal-handle {
             position: absolute;
-            top: 12px;
-            left: 50%;
-            transform: translateX(-50%);
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 30px; /* 加大可觸控抓取區域 */
+            cursor: grab;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2002;
+        }
+
+        .modal-handle::after {
+            content: '';
             width: 40px;
-            height: 6px;
-            background: rgba(0, 0, 0, 0.15);
+            height: 5px;
+            background: rgba(0, 0, 0, 0.2);
             border-radius: 3px;
+        }
+
+        .modal-handle:active {
+            cursor: grabbing;
+        }
+
+        .modal-handle:active::after {
+            background: rgba(0, 0, 0, 0.4);
         }
 
         .close-x { 
@@ -588,6 +607,78 @@
             color: #FFFFFF; 
             font-weight: 800;
         }
+        /* 全螢幕大字卡彈窗 Overlay */
+        .big-card-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            z-index: 9999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .big-card-overlay.active {
+            display: flex !important;
+            animation: bigCardZoomIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes bigCardZoomIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .big-card-box {
+            background: #FFFFFF;
+            width: 100%;
+            max-width: 360px;
+            border-radius: 24px;
+            padding: 30px 20px;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            border: 3px solid var(--primary);
+        }
+
+        .big-card-title {
+            font-size: 13px;
+            font-weight: 800;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+        }
+
+        /* 關鍵：超大黑體韓文，確保司機一眼看懂 */
+        .big-card-kr {
+            font-size: 26px;
+            font-weight: 900;
+            color: #000000;
+            line-height: 1.4;
+            margin-bottom: 20px;
+            word-break: keep-all;
+            white-space: pre-line;
+            background: #F2F2F7;
+            padding: 18px 12px;
+            border-radius: 16px;
+            border: 1px solid rgba(0,0,0,0.08);
+        }
+
+        .big-card-note {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 15px;
+        }
+
+        .big-card-close-tip {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+    
     </style>
 </head>
 <body>
@@ -651,6 +742,41 @@
 
     <!-- Modal 2: 住宿與交通 -->
     <div id="housing-modal" class="modal">
+         <!-- Uber & 計程車溝通字卡區塊 -->
+        <div class="card" style="margin-bottom: 12px; border-left: 4px solid var(--primary);">
+            <strong style="color:var(--primary); font-size:14px; display:block; margin-bottom:4px;">🚕 Uber & 計程車溝通字卡</strong>
+            <p style="font-size:11px; color:var(--text-muted); margin-bottom:8px;">💡 <b>點擊任意字卡，即可彈出全螢幕超大韓文給司機看！</b></p>
+
+            <!-- PIN 碼輸入與大字卡觸發 -->
+            <div style="background:rgba(10, 132, 255, 0.06); padding:10px; border-radius:10px; margin-bottom:10px; border:1px solid rgba(10, 132, 255, 0.2);">
+                <label style="font-size:12px; font-weight:bold; color:var(--text-dark); display:block; margin-bottom:4px;">🔑 我的 Uber PIN 碼是：</label>
+                <input type="number" id="uberPinInput" placeholder="輸入 4 位數 PIN 碼" oninput="updatePinCard()" style="width:100%; padding:8px; border-radius:8px; border:1px solid #CCC; font-size:14px; font-weight:bold; text-align:center; box-sizing:border-box;">
+                <div id="pinResultCard" onclick="triggerPinBigCard()" style="margin-top:6px; padding:8px; background:#FFF; border-radius:8px; font-size:13px; font-weight:bold; color:var(--primary); text-align:center; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,0.05);">
+                    제 PIN 번호는 [ ---- ] 입니다. 🔍 (點擊放大)
+                </div>
+            </div>
+
+            <!-- 常見溝通情境大字卡列表 -->
+            <div style="display:flex; flex-direction:column; gap:6px;">
+                <div class="guide-box" style="margin:0; background:rgba(0,0,0,0.03); cursor:pointer;" onclick="showBigCard('索取紙本收據', '영수증 주시겠어요?', '請給我收據 / 證明未超收')">
+                    <b>🧾 索取紙本收據：</b><br>
+                    <span style="font-size:13px; font-weight:bold; color:var(--text-dark);">영수증 주시겠어요? 🔍</span><br>
+                    <small style="color:var(--text-muted);">(點擊放大顯示)</small>
+                </div>
+
+                <div class="guide-box" style="margin:0; background:rgba(0,0,0,0.03); cursor:pointer;" onclick="showBigCard('開後车廂放推車/行李', '트렁크 좀 열어주세요.\n유모차가 있습니다.', '請協助開啟後車廂，我們有嬰兒推車與大行李')">
+                    <b>👶 開後車廂放推車/大行李：</b><br>
+                    <span style="font-size:13px; font-weight:bold; color:var(--text-dark);">트렁크 좀 열어주세요. 유모차가 있습니다. 🔍</span><br>
+                    <small style="color:var(--text-muted);">(點擊放大顯示)</small>
+                </div>
+
+                <div class="guide-box" style="margin:0; background:rgba(0,0,0,0.03); cursor:pointer;" onclick="showBigCard('要求按表計費', '미터기대로 가주세요.', '請按跳表金額計費，謝謝')">
+                    <b>⏱️ 要求按表計費 (非 APP 叫車)：</b><br>
+                    <span style="font-size:13px; font-weight:bold; color:var(--text-dark);">미터기대로 가주세요. 🔍</span><br>
+                    <small style="color:var(--text-muted);">(點擊放大顯示)</small>
+                </div>
+            </div>
+        </div>
         <div class="modal-handle"></div>
         <span class="close-x" onclick="hideModal('housing')">✕</span>
         <h2 style="color:var(--primary); margin-bottom: 15px; font-weight: 900;">🏡 兩大 Airbnb 住宿與包車接駁</h2>
@@ -1039,6 +1165,61 @@
         <div class="modal-handle"></div>
         <span class="close-x" onclick="hideModal('sos')">✕</span>
         <h2 style="color:#FF3B30; margin-bottom: 20px; font-weight: 900;">🆘 釜山應急 SOS 手冊</h2>
+        <!-- 👇【在此處貼上退稅計算機卡片】👇 -->
+    <div class="card" style="margin-bottom: 16px; border-left: 4px solid var(--primary); background: rgba(255, 255, 255, 0.85);">
+    <div style="font-weight: 800; font-size: 15px; color: var(--primary); margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
+        🧮 韓國退稅與匯率試算
+    </div>
+
+    <!-- 輸入欄位組 -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+        <div>
+            <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 4px;">購買金額 (KRW 韓元)</label>
+            <input type="number" id="krwInput" value="85000" step="1000" placeholder="請輸入韓元"
+                style="width: 100%; padding: 8px 10px; border-radius: 10px; border: 1px solid rgba(0,0,0,0.12); background: rgba(255,255,255,0.9); font-size: 13px; font-weight: 700; color: var(--text-dark); outline: none;">
+        </div>
+        <div>
+            <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 4px;">匯率 (1 TWD = ? KRW)</label>
+            <div style="display: flex; gap: 4px;">
+                <input type="number" id="rateInput" value="41.0" step="0.1"
+                    style="width: 100%; padding: 8px 6px; border-radius: 10px; border: 1px solid rgba(0,0,0,0.12); background: rgba(255,255,255,0.9); font-size: 13px; font-weight: 700; color: var(--text-dark); outline: none;">
+                <button id="fetchRateBtn" onclick="fetchRealtimeRate()"
+                    style="padding: 8px 10px; border-radius: 10px; border: none; background: var(--primary); color: #fff; font-size: 11px; font-weight: 800; cursor: pointer; white-space: nowrap; box-shadow: 0 2px 6px rgba(10,132,255,0.3);">更新</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 快速加算金額按鈕 -->
+    <div style="display: flex; gap: 6px; margin-bottom: 12px;">
+        <button onclick="addKrw(10000)" style="flex:1; padding: 6px; font-size: 11px; font-weight: 700; border-radius: 8px; border: 1px solid rgba(0,0,0,0.08); background: rgba(0,0,0,0.04); color: var(--text-dark); cursor: pointer;">+1 萬</button>
+        <button onclick="addKrw(50000)" style="flex:1; padding: 6px; font-size: 11px; font-weight: 700; border-radius: 8px; border: 1px solid rgba(0,0,0,0.08); background: rgba(0,0,0,0.04); color: var(--text-dark); cursor: pointer;">+5 萬</button>
+        <button onclick="addKrw(100000)" style="flex:1; padding: 6px; font-size: 11px; font-weight: 700; border-radius: 8px; border: 1px solid rgba(0,0,0,0.08); background: rgba(0,0,0,0.04); color: var(--text-dark); cursor: pointer;">+10 萬</button>
+    </div>
+
+    <!-- 試算結果呈現面板 -->
+    <div style="background: rgba(10, 132, 255, 0.06); padding: 12px; border-radius: 12px; border: 1px solid rgba(10, 132, 255, 0.15); font-size: 12px; line-height: 1.8; color: var(--text-dark);">
+        <div style="display: flex; justify-content: space-between;">
+            <span>退稅金額：</span>
+            <strong style="color: #D35400;"><span id="refundKrw">0</span> KRW (<span id="refundRate">0</span>%)</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+            <span>折合台幣（退稅前）：</span>
+            <span>NT$ <span id="twdBefore">0</span></span>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-weight: 800; font-size: 13px; margin-top: 2px;">
+            <span>退稅後台幣（實際）：</span>
+            <strong style="color: var(--primary);">NT$ <span id="twdAfter">0</span></strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; color: #27C93F; font-weight: 700; margin-top: 2px;">
+            <span>立省台幣：</span>
+            <span>NT$ <span id="twdSaved">0</span></span>
+        </div>
+        
+        <!-- 湊單升級提示 -->
+        <div id="tierTip" style="display: none; margin-top: 8px; padding: 6px 10px; background: rgba(255, 149, 0, 0.12); color: #B76E00; border-radius: 8px; font-size: 11px; font-weight: 800; border-left: 3px solid var(--accent);"></div>
+    </div>
+</div>
+    <!-- 👆【退稅計算機卡片結束】👆 -->
         <div class="card" style="margin-bottom:10px; border-left: 5px solid #FF3B30;" onclick="copy('영도 흰여울문화마을로 가주세요.')">
             <strong>🚖 媽媽會合指示 (點擊複製韓文)</strong>
             <p style="font-size:13px; margin:4px 0;">司機大哥，請帶我去影島白淺灘文化村！<br><small style="color:#666;">영도 흰여울문화마을로 가주세요.</small></p>
@@ -1128,6 +1309,52 @@
                 lat: 35.1610, lng: 129.1920 
             },
 
+            { 
+                name: "Diart (디아트)", 
+                area: "海雲台/中洞",
+                info: "中洞站 7號出口。神級 Kaymak 土耳其凝乳土司，奶香爆棚濃郁滑順！", 
+                dish: "Kaymak 凝乳土司 / 拿鐵", 
+                addr: "디아트 달맞이점", 
+                koreanAddr: "디아트 달맞이점", 
+                lat: 35.1585, lng: 129.1720 
+            },
+            { 
+                name: "Liberta (리베르타)", 
+                area: "海雲台/中洞",
+                info: "中洞站 7號出口。迎月路高質感景觀咖啡廳，俯瞰海雲台海岸線極度放鬆。", 
+                dish: "手沖單品咖啡 / 千層蛋糕", 
+                addr: "리베르타 달맞이점", 
+                koreanAddr: "리베르타 달맞이점", 
+                lat: 35.1578, lng: 129.1735 
+            },
+            { 
+                name: "老虎冰淇淋 (호랑이젤라떡)", 
+                area: "海雲台/尾浦",
+                info: "海雲台站 3號出口 / 尾浦站。皮 Q 餡滿的超人氣大福冰淇淋，拿在手上拍照超吸睛。", 
+                dish: "抹茶/開心果大福冰淇淋", 
+                addr: "호랑이젤라떡", 
+                koreanAddr: "호랑이젤라떡", 
+                lat: 35.1602, lng: 129.1678 
+            },
+            { 
+                name: "自然鹽可頌 (자연도소금빵)", 
+                area: "海雲台/中洞",
+                info: "中洞站 7號出口。底座極度酥脆香濃，剛出爐奶油香氣四溢，排隊人潮絡繹不絕。", 
+                dish: "招牌奶油鹽可頌", 
+                addr: "자연도소금빵 해운대점", 
+                koreanAddr: "자연도소금빵 해운대점", 
+                lat: 35.1625, lng: 129.1630 
+            },
+            { 
+                name: "大海鮑魚粥 (바다전복죽)", 
+                area: "海雲台",
+                info: "海雲台站 5號出口。鮮味滿滿的深綠色純鮑魚粥，質地溫和濃郁，1歲與4歲幼兒極度適合。", 
+                dish: "招牌濃郁鮑魚粥 / 烤鮑魚", 
+                addr: "바다전복죽", 
+                koreanAddr: "바다전복죽", 
+                lat: 35.1608, lng: 129.1580 
+            },
+
             // --- 【東釜山 / 機張 區域】 ---
             { 
                 name: "龍宮海鮮炸醬麵 (용궁해물쟁반짜장)", 
@@ -1206,6 +1433,42 @@
                 koreanAddr: "언양불고기부산집", 
                 lat: 35.1528, lng: 129.1172 
             },
+            { 
+                name: "Allsunday (올선데이)", 
+                area: "廣安里",
+                info: "金蓮山站 1號出口。招牌軟 Q 貝果，口感扎實濕潤，配奶油乳酪超絕。", 
+                dish: "軟 Q 貝果 / 手沖咖啡", 
+                addr: "올선데이 광안점", 
+                koreanAddr: "올선데이 광안점", 
+                lat: 35.1485, lng: 129.1142 
+            },
+            { 
+                name: "安木本店 (안목)", 
+                area: "廣安里",
+                info: "廣安站 5號出口。米其林指南推薦！湯頭濃郁清甜的豬肉湯飯，肉質軟嫩無腥味。", 
+                dish: "濃郁豬肉湯飯 / 白切肉", 
+                addr: "안목 광안점", 
+                koreanAddr: "안목 광안점", 
+                lat: 35.1522, lng: 129.1165 
+            },
+            { 
+                name: "丰川鰻魚 (풍천만어)", 
+                area: "廣安里",
+                info: "廣安站 3號出口。現烤炭香爆棚的淡水鰻魚，外皮酥脆肉質 Q 彈多汁。", 
+                dish: "炭烤淡水鰻魚", 
+                addr: "풍천만어", 
+                koreanAddr: "풍천만어", 
+                lat: 35.1540, lng: 129.1178 
+            },
+            { 
+                name: "Coffee & Bakery (廣安里海景店)", 
+                area: "廣安里",
+                info: "金蓮山站 3號出口。海景第一排絕美景觀咖啡廳，大片落地窗正對廣安大橋。", 
+                dish: "精致烘焙甜點 / 海景拿鐵", 
+                addr: "광안리 해변카페", 
+                koreanAddr: "광안리 해변카페", 
+                lat: 35.1478, lng: 129.1135 
+            },
 
             // --- 【西面/田浦區域新增】 ---
             { 
@@ -1272,6 +1535,55 @@
                 addr: "범어사", 
                 koreanAddr: "범어사", 
                 lat: 35.2820, lng: 129.0715 
+            },
+            { 
+                name: "No.9 燒肉 (넘버나인)", 
+                area: "西面",
+                info: "西面站 6號出口。高質感韓牛與熟成豬五花，專人桌邊代烤爆汁，適合全家輕鬆享用。", 
+                dish: "熟成韓牛 / 厚切豬五花", 
+                addr: "넘버나인 서면점", 
+                koreanAddr: "넘버나인 서면점", 
+                lat: 35.1575, lng: 129.0602 
+            },
+
+            // --- 【既有店家】 ---
+            { 
+                name: "尚國家飯捲 (상국이네)", 
+                area: "海雲台傳統市場", 
+                info: "海雲台傳統市場內超人氣辣炒年糕與血腸店，醬汁濃郁微辣。", 
+                dish: "辣炒年糕 / 魚餅 / 血腸", 
+                addr: "상국이네", 
+                koreanAddr: "상국이네", 
+                lat: 35.1615, 
+                lng: 129.1601 
+            },
+            // --- 【南浦洞 區域新增】 ---
+            { 
+                name: "海田烤腸 (해전곱창)", 
+                area: "南浦洞/札嘎其",
+                info: "札嘎其站 3號出口。起司加爆！香 Q 烤豬腸搭配滿滿牽絲起司與特製辣醬，邪惡度滿分。", 
+                dish: "起司烤腸 / 炒飯", 
+                addr: "해전곱창", 
+                koreanAddr: "해전곱창", 
+                lat: 35.0995, lng: 129.0272 
+            },
+            { 
+                name: "BIFF廣場元祖堅果糖餅", 
+                area: "南浦洞",
+                info: "南浦站 1號出口 / 札嘎其站 7號出口。奶油現煎酥脆餅皮包覆滿滿黑糖與葵瓜子堅果碎。", 
+                dish: "堅果黑糖餅", 
+                addr: "BIFF광장", 
+                koreanAddr: "BIFF광장", 
+                lat: 35.0988, lng: 129.0298 
+            },
+            { 
+                name: "札嘎其市場 19號攤位", 
+                area: "南浦洞/札嘎其",
+                info: "札嘎其站 10號出口。海鮮市場內老字號現煎鮮魚與烤海鮮，魚肉外酥內嫩鮮甜美味。", 
+                dish: "現煎綜合鮮魚 / 烤扇貝", 
+                addr: "자갈치시장 19호", 
+                koreanAddr: "자갈치시장 19호", 
+                lat: 35.0968, lng: 129.0305 
             },
 
             // --- 【釜山極度推薦補充美食（未在主行程中）】 ---
@@ -2561,6 +2873,268 @@
         /* 頁面初始化 */
         renderDayButtons();
         render(1);
+
+        // ==========================================
+    // 🧮 韓國退稅計算機專用邏輯
+    // ==========================================
+    const refundTiers = [
+        { min: 15000, max: 29999, refund: 1000 },
+        { min: 30000, max: 49999, refund: 1500 },
+        { min: 50000, max: 74999, refund: 3000 },
+        { min: 75000, max: 99999, refund: 5000 },
+        { min: 100000, max: 124999, refund: 6000 },
+        { min: 125000, max: 149999, refund: 8000 },
+        { min: 150000, max: 174999, refund: 9000 },
+        { min: 175000, max: 199999, refund: 11000 },
+        { min: 200000, max: 224999, refund: 12000 },
+        { min: 225000, max: 249999, refund: 14000 },
+        { min: 250000, max: 299999, refund: 16000 },
+        { min: 300000, max: 349999, refund: 19000 },
+        { min: 350000, max: 399999, refund: 22000 },
+        { min: 400000, max: 449999, refund: 25000 },
+        { min: 450000, max: 499999, refund: 28000 },
+        { min: 500000, max: 549999, refund: 32000 }
+    ];
+
+    function calculateTaxRefund(amountKRW) {
+        if (amountKRW < 15000) return { refund: 0, nextTierMin: 15000 };
+        const tier = refundTiers.find(t => amountKRW >= t.min && amountKRW <= t.max);
+        if (tier) {
+            const nextIdx = refundTiers.indexOf(tier) + 1;
+            const nextTier = refundTiers[nextIdx];
+            return {
+                refund: tier.refund,
+                nextTierMin: nextTier ? nextTier.min : null,
+                nextTierRefund: nextTier ? nextTier.refund : null
+            };
+        }
+        return { refund: Math.floor(amountKRW * 0.063), nextTierMin: null };
+    }
+
+    function updateCalculator() {
+        const krwEl = document.getElementById('krwInput');
+        const rateEl = document.getElementById('rateInput');
+        if (!krwEl || !rateEl) return;
+
+        const krw = parseFloat(krwEl.value) || 0;
+        const rate = parseFloat(rateEl.value) || 41.0;
+
+        const { refund, nextTierMin, nextTierRefund } = calculateTaxRefund(krw);
+        const refundPercent = krw > 0 ? ((refund / krw) * 100).toFixed(1) : 0;
+        
+        const twdBefore = Math.round(krw / rate);
+        const twdAfter = Math.round((krw - refund) / rate);
+        const twdSaved = twdBefore - twdAfter;
+
+        document.getElementById('refundKrw').innerText = refund.toLocaleString();
+        document.getElementById('refundRate').innerText = refundPercent;
+        document.getElementById('twdBefore').innerText = twdBefore.toLocaleString();
+        document.getElementById('twdAfter').innerText = twdAfter.toLocaleString();
+        document.getElementById('twdSaved').innerText = twdSaved.toLocaleString();
+
+        const tipEl = document.getElementById('tierTip');
+        if (nextTierMin && (nextTierMin - krw <= 15000)) {
+            const gap = nextTierMin - krw;
+            const extraRefund = nextTierRefund - refund;
+            tipEl.innerText = `💡 再湊 ₩${gap.toLocaleString()} 進入下一階，多退 ₩${extraRefund.toLocaleString()}！`;
+            tipEl.style.display = 'block';
+        } else {
+            tipEl.style.display = 'none';
+        }
+    }
+
+    function addKrw(val) {
+        const input = document.getElementById('krwInput');
+        if (input) {
+            input.value = (parseFloat(input.value) || 0) + val;
+            updateCalculator();
+        }
+    }
+
+    
+    // 自動線上抓取開放匯率（以開放式 ExchangeRate-API 為例）
+    async function fetchRealtimeRate() {
+    try {
+        const res = await fetch('https://open.er-api.com/v6/latest/TWD');
+        const data = await res.json();
+        if (data && data.rates && data.rates.KRW) {
+        document.getElementById('rateInput').value = data.rates.KRW.toFixed(2);
+        updateCalculator();
+        }
+    } catch (err) {
+        console.warn('線上匯率更新失敗，維持預設/手動數值', err);
+    }
+    }
+
+    // 監聽輸入框即時重新計算
+    document.addEventListener('DOMContentLoaded', () => {
+        const krwEl = document.getElementById('krwInput');
+        const rateEl = document.getElementById('rateInput');
+        if (krwEl) krwEl.addEventListener('input', updateCalculator);
+        if (rateEl) rateEl.addEventListener('input', updateCalculator);
+        updateCalculator();
+    });
+
+    // 動態更新 Uber PIN 碼對照卡片
+        function updatePinCard() {
+            const pinVal = document.getElementById('uberPinInput').value;
+            const displayBox = document.getElementById('pinResultCard');
+            if (pinVal) {
+                displayBox.innerHTML = `제 PIN 번호는 <span style="font-size:16px; color:#FF3B30; font-weight:900;">[ ${pinVal} ]</span> 입니다. 📋`;
+            } else {
+                displayBox.innerHTML = `제 PIN 번호는 [ ---- ] 입니다. 📋`;
+            }
+        }
+        // 顯示全螢幕放大字卡
+        function showBigCard(title, krText, note) {
+            document.getElementById('bigCardTitle').innerText = title;
+            document.getElementById('bigCardKr').innerText = krText;
+            document.getElementById('bigCardNote').innerText = note;
+            
+            const modal = document.getElementById('big-card-modal');
+            modal.classList.add('active');
+            
+            // 同時自動複製韓文到剪貼簿，雙重保障
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(krText);
+            }
+        }
+
+        // 關閉放大字卡
+        function closeBigCard() {
+            const modal = document.getElementById('big-card-modal');
+            modal.classList.remove('active');
+        }
+
+        // 輸入 PIN 碼即時更新字卡
+        function updatePinCard() {
+            const pinVal = document.getElementById('uberPinInput').value;
+            const displayBox = document.getElementById('pinResultCard');
+            if (pinVal) {
+                displayBox.innerHTML = `제 PIN 번호는 <span style="font-size:16px; color:#FF3B30; font-weight:900;">[ ${pinVal} ]</span> 입니다. 🔍 (點擊放大)`;
+            } else {
+                displayBox.innerHTML = `제 PIN 번호는 [ ---- ] 입니다. 🔍 (點擊放大)`;
+            }
+        }
+
+        // 點擊放大 PIN 碼卡片
+        function triggerPinBigCard() {
+            const pinVal = document.getElementById('uberPinInput').value;
+            if (!pinVal) {
+                alert("請先在上方輸入框輸入您的 4 位數 Uber PIN 碼！");
+                return;
+            }
+            showBigCard('Uber PIN 碼核對', `제 PIN 번호는\n[ ${pinVal} ] 입니다.`, `我的 Uber PIN 碼是 ${pinVal}`);
+        }
+        // =========================================
+        // 頂部 Handle 按住下滑關閉手勢 (Swipe down to dismiss)
+        // =========================================
+        document.addEventListener('DOMContentLoaded', () => {
+            let startY = 0;
+            let currentY = 0;
+            let activeModal = null;
+            let isDragging = false;
+
+            // 監聽所有 modal 頂部的 handle 區域
+            document.querySelectorAll('.modal-handle').forEach(handle => {
+                
+                // 1. 觸控開始 (手機 Touch)
+                handle.addEventListener('touchstart', (e) => {
+                    activeModal = handle.closest('.modal');
+                    startY = e.touches[0].clientY;
+                    isDragging = true;
+                    activeModal.style.transition = 'none'; // 拖拽時關閉動畫以求即時跟手
+                }, { passive: true });
+
+                // 2. 觸控移動
+                handle.addEventListener('touchmove', (e) => {
+                    if (!isDragging || !activeModal) return;
+                    currentY = e.touches[0].clientY - startY;
+
+                    // 只允許往下拖拽 (currentY > 0)
+                    if (currentY > 0) {
+                        activeModal.style.transform = `translateY(${currentY}px)`;
+                    }
+                }, { passive: true });
+
+                // 3. 觸控結束
+                handle.addEventListener('touchend', () => {
+                    if (!isDragging || !activeModal) return;
+                    isDragging = false;
+                    activeModal.style.transition = 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
+
+                    // 如果下滑距離超過 100px，視為快速關閉；否則彈回原位
+                    if (currentY > 100) {
+                        const modalId = activeModal.id.replace('-modal', '');
+                        hideModal(modalId);
+                    } else {
+                        activeModal.style.transform = 'translateY(0)';
+                    }
+                    currentY = 0;
+                    activeModal = null;
+                });
+
+                // --- 支援滑鼠拖拽 (電腦端測試用) ---
+                handle.addEventListener('mousedown', (e) => {
+                    activeModal = handle.closest('.modal');
+                    startY = e.clientY;
+                    isDragging = true;
+                    activeModal.style.transition = 'none';
+
+                    const onMouseMove = (moveEvent) => {
+                        if (!isDragging || !activeModal) return;
+                        currentY = moveEvent.clientY - startY;
+                        if (currentY > 0) {
+                            activeModal.style.transform = `translateY(${currentY}px)`;
+                        }
+                    };
+
+                    const onMouseUp = () => {
+                        isDragging = false;
+                        document.removeEventListener('mousemove', onMouseMove);
+                        document.removeEventListener('mouseup', onMouseUp);
+
+                        if (activeModal) {
+                            activeModal.style.transition = 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
+                            if (currentY > 100) {
+                                const modalId = activeModal.id.replace('-modal', '');
+                                hideModal(modalId);
+                            } else {
+                                activeModal.style.transform = 'translateY(0)';
+                            }
+                            currentY = 0;
+                            activeModal = null;
+                        }
+                    };
+
+                    document.addEventListener('mousemove', onMouseMove);
+                    document.addEventListener('mouseup', onMouseUp);
+                });
+            });
+        });
+
+        // 確保原本的 hideModal 函數有重置 transform 樣式
+        const originalHideModal = hideModal;
+        hideModal = function(id) {
+            const modal = document.getElementById(id + '-modal');
+            if (modal) {
+                modal.classList.remove('active');
+                modal.style.transform = 'translateY(100%)'; // 恢復下滑關閉效果
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                    modal.style.transform = ''; // 清除 inline transform 供下次開啟
+                }, 350);
+            }
+        };
     </script>
+    <!-- 全螢幕大字卡 Modal 容器 -->
+    <div id="big-card-modal" class="big-card-overlay" onclick="closeBigCard()">
+        <div class="big-card-box">
+            <div id="bigCardTitle" class="big-card-title">TITLE</div>
+            <div id="bigCardKr" class="big-card-kr">한글 텍스트</div>
+            <div id="bigCardNote" class="big-card-note">中文說明</div>
+            <div class="big-card-close-tip">✕ 點擊螢幕任意處關閉</div>
+        </div>
+    </div>
 </body>
 </html>
