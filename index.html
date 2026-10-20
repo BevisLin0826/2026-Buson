@@ -775,6 +775,11 @@
                     <span style="font-size:13px; font-weight:bold; color:var(--text-dark);">미터기대로 가주세요. 🔍</span><br>
                     <small style="color:var(--text-muted);">(點擊放大顯示)</small>
                 </div>
+                <div class="guide-box" style="margin:0; background:rgba(0,0,0,0.03); cursor:pointer;" onclick="showBigCard('已經透過 APP 完成線上扣款了', '앱으로 이미 결제했습니다', '已經透過 APP 完成線上扣款了，請不要再收現金')">
+                    <b>🧾 APP 完成線上扣款：</b><br>
+                    <span style="font-size:13px; font-weight:bold; color:var(--text-dark);">앱으로 이미 결제했습니다 🔍</span><br>
+                    <small style="color:var(--text-muted);">(點擊放大顯示)</small>
+                </div>
             </div>
         </div>
         <div class="modal-handle"></div>
@@ -811,62 +816,47 @@
         </div>
     </div>
 
-    <!-- Modal 3: 門票與 PASS 評估與需求總表 -->
+    <!-- Modal 3: 門票與 PASS 憑證管理與需求總表 -->
     <div id="tickets-modal" class="modal">
         <div class="modal-handle"></div>
         <span class="close-x" onclick="hideModal('tickets')">✕</span>
-        <h2 style="color:var(--text-dark); margin-bottom: 12px; font-weight: 900; font-size:16px;">🎟️ 門票需求總表與 Visit Busan Pass 評估</h2>
-                       
-        <!-- 方案摘要卡片 -->
-        <div class="card" style="margin-bottom: 12px; border-left: 4px solid var(--primary);">
-            <strong style="color:var(--primary); font-size:14px;">💳 購票方案決策摘要</strong>
-            <p style="font-size:12px; color:#333; margin:6px 0 2px;">
-                • <b>大人 2 位</b>：購買 <b>Visit Busan Pass BIG3</b>（售價 ₩45,000/人），用來免費兌換海洋館、觀景台與松島纜車。<br>
-                • <b>大女兒 (4歲)</b>：使用 <b>Klook 線上預購兒童票</b>，享專屬折扣且免現場排隊。<br>
-                • <b>小女兒 (1歲)</b>：全程景點 <b>免費入場</b>（需隨身攜帶護照備查）。
-            </p>
-        </div>
-
-        <!-- 4歲大女兒預購清單卡片 -->
-        <div class="card" style="margin-bottom: 12px; border-left: 4px solid var(--accent);">
-            <strong style="color:var(--accent); font-size:14px;">👧 4 歲大女兒 Klook 線上預購與兌換</strong>
-            <p style="font-size:11px; color:var(--text-muted); margin:4px 0 8px;">點擊按鈕開啟 Klook 平台預購兒童票或開啟電子憑證：</p>
+        <h2 style="color:var(--text-dark); margin-bottom: 12px; font-weight: 800; font-size:16px;">🎟️ 門票憑證管理與 Visit Busan Pass 總表</h2>
+        
+        <!-- 1. 官方電子憑證一鍵開啟 (現場驗票/兌換專用) -->
+        <div class="card" style="margin-bottom: 12px; border-left: 4px solid #007AFF; background: rgba(0, 122, 255, 0.03);">
+            <strong style="color:#007AFF; font-size:14px; display:block; margin-bottom:6px;">🎫 現場驗票 & 憑證快速開啟</strong>
             
-            <div style="margin-bottom: 10px; padding: 8px; background: rgba(0,0,0,0.02); border-radius: 12px;">
-                <div style="font-size:12px; font-weight:bold;">1. SEA LIFE 釜山海洋館 (D5)</div>
-                <div style="font-size:11px; color:#555; margin-bottom:4px;">適用：兒童票 (36個月-12歲) ｜ 現場原價 ₩27,500</div>
-                <button class="map-btn" style="background: #FF5722; color: white;" onclick="openKlookApp('https://www.klook.com/zh-TW/activity/8542-sea-life-busan-aquarium/')">🛍️ 開啟 Klook 買兒童票 / 秀憑證</button>
+            <!-- 天空膠囊列車電子車票 -->
+            <div style="margin-bottom: 8px; padding: 8px; background: #FFF; border-radius: 8px; border:1px solid rgba(0,122,255,0.2);">
+                <div style="font-size:12px; font-weight:bold; color:var(--text-dark);">🚃 天空膠囊列車 (D4 青沙浦➔尾浦 16:00)</div>
+                <div style="font-size:10.5px; color:#555; margin:2px 0 6px;">預約號：RS26018314458（請出示網頁畫面，不可用截圖）</div>
+                <button class="map-btn" style="background: #007AFF; color: white; width:100%; font-size:11.5px; font-weight:800; padding:8px;" onclick="openCapsuleTicket()">
+                    🎫 開啟天空膠囊列車官方電子車票
+                </button>
             </div>
 
-            <div style="margin-bottom: 10px; padding: 8px; background: rgba(0,0,0,0.02); border-radius: 12px;">
-                <div style="font-size:12px; font-weight:bold;">2. Busan X the Sky 觀景台 (D5)</div>
-                <div style="font-size:11px; color:#555; margin-bottom:4px;">適用：兒童票 (36個月-12歲) ｜ 現場原價 ₩24,000</div>
-                <button class="map-btn" style="background: #FF5722; color: white;" onclick="openKlookApp('https://www.klook.com/zh-TW/activity/71597-busan-x-the-sky-ticket-busan/')">🛍️ 開啟 Klook 買兒童票 / 秀憑證</button>
+            <!-- Visit Busan Pass BIG3 App/網頁 -->
+            <div style="margin-bottom: 8px; padding: 8px; background: #FFF; border-radius: 8px; border:1px solid rgba(0,199,60,0.2);">
+                <div style="font-size:12px; font-weight:bold; color:var(--text-dark);">💳 Visit Busan Pass (BIG 3) 兌換</div>
+                <div style="font-size:10.5px; color:#555; margin:2px 0 6px;">現場出示 App QR Code 免費兌換纜車、觀景台與海岸列車[cite: 4, 5]。</div>
+                <button class="map-btn" style="background: #00C73C; color: white; width:100%; font-size:11.5px; font-weight:800; padding:8px;" onclick="openPassApp()">
+                    📱 開啟 Visit Busan Pass 兌換碼
+                </button>
             </div>
 
-            <div style="margin-bottom: 5px; padding: 8px; background: rgba(0,0,0,0.02); border-radius: 12px;">
-                <div style="font-size:12px; font-weight:bold;">3. 松島海上纜車 (D2)</div>
-                <div style="font-size:11px; color:#555; margin-bottom:4px;">適用：兒童票 (36個月-12歲) ｜ 水晶車廂單程 ₩12,000</div>
-                <button class="map-btn" style="background: #FF5722; color: white;" onclick="openKlookApp('https://www.klook.com/zh-TW/activity/27170-songdo-sea-cable-car-ticket-busan/')">🛍️ 開啟 Klook 買兒童票 / 秀憑證</button>
-            </div>
-        </div>
-
-        <!-- Pass 划算度精算評估 -->
-        <div class="card" style="margin-bottom: 12px; border-left: 4px solid var(--mint-green);">
-            <strong style="color:var(--mint-green); font-size:14px;">💳 釜山 Pass 划算度評估結論</strong>
-            <p style="font-size:12px; color:#333; margin:6px 0 2px; line-height:1.5;">
-                • <b>大人買 BIG 3 Pass 最划算</b>：大人散買 3 大景點需 ₩75,000，購買 BIG 3（₩45,000/人），<b>每位大人現省 ₩30,000 (兩位共省 ₩60,000)</b>，且完全無 24HR 倒數時間壓力！<br>
-                • <b>4 歲大女兒不需買 Pass</b>：各景點皆有兒童票優惠（散買約 ₩61,000），直接在 Klook 單買兒童票比買 Pass 更省錢。
-            </p>
-            <div style="margin-top:8px;">
-                <button class="map-btn" style="background: #00C73C; color: white; margin-bottom:6px;" onclick="openPassApp()">📱 開啟 Visit Busan Pass 兌換頁</button>
-                <button class="map-btn" style="background: rgba(0,0,0,0.05); color: #333;" onclick="openKlookApp('https://www.klook.com/zh-TW/activity/81216-visit-busan-pass/')">🎟️ Klook 預購 Visit Busan Pass</button>
+            <!-- Klook 我的訂單 -->
+            <div style="padding: 8px; background: #FFF; border-radius: 8px; border:1px solid rgba(255,87,34,0.2);">
+                <div style="font-size:12px; font-weight:bold; color:var(--text-dark);">🛍️ Klook 預訂訂單與 QR Code</div>
+                <div style="font-size:10.5px; color:#555; margin:2px 0 6px;">一鍵開啟 Klook App / 網頁版查看所有門票憑證。</div>
+                <button class="map-btn" style="background: #FF5722; color: white; width:100%; font-size:11.5px; font-weight:800; padding:8px;" onclick="openKlookApp('https://www.klook.com/zh-TW/my_orders/')">
+                    📱 開啟 Klook 我的憑證/訂單管理
+                </button>
             </div>
         </div>
 
-        <!-- 門票與票券需求總表 -->
-        <div class="card" style="margin-bottom: 12px; padding: 12px;">
-            <strong style="color:var(--primary); font-size:13px; display:block; margin-bottom:6px;">📊 全行程景點收費方式與家庭總價 (2大2幼)</strong>
+        <!-- 3. 全行程門票需求與家庭總價總表 -->
+        <div class="card" style="padding: 12px; border-left: 4px solid var(--secondary);">
+            <strong style="color:var(--secondary); font-size:13px; display:block; margin-bottom:6px;">📊 全行程景點門票與 Pass 適用總表 (2大2幼)</strong>
             <table class="info-table">
                 <thead>
                     <tr>
@@ -883,61 +873,54 @@
                         <td>₩17,000</td>
                         <td>₩12,000 (兒童)</td>
                         <td><b>₩46,000</b></td>
-                        <td>✅ 可兌換</td>
+                        <td>✅ BIG 3 可換[cite: 4]</td>
                     </tr>
                     <tr>
                         <td><b>松島龍宮雲橋</b></td>
                         <td>₩1,000</td>
                         <td>免費 (&lt;6歲)</td>
                         <td><b>₩2,000</b></td>
-                        <td>✅ 可兌換</td>
+                        <td>✅ BIG 3 可換[cite: 4]</td>
                     </tr>
                     <tr>
                         <td><b>SEA LIFE 海洋館</b></td>
                         <td>₩31,000</td>
                         <td>₩25,000 (兒童)</td>
                         <td><b>₩87,000</b></td>
-                        <td>✅ 可兌換</td>
+                        <td>❌ 僅7折/Klook買[cite: 4]</td>
                     </tr>
                     <tr>
                         <td><b>Busan X the Sky</b></td>
                         <td>₩27,000</td>
                         <td>₩24,000 (兒童)</td>
                         <td><b>₩78,000</b></td>
-                        <td>✅ 可兌換</td>
+                        <td>✅ BIG 3 可換[cite: 4]</td>
                     </tr>
                     <tr>
-                        <td><b>天空膠囊列車</b></td>
-                        <td>按車計費</td>
+                        <td><b>天空膠囊列車</b> (包車)</td>
+                        <td>包車共乘</td>
                         <td>包車共乘</td>
                         <td><b>₩45,000</b></td>
-                        <td>❌ 需自費預約</td>
+                        <td>❌ 需自費預約[cite: 4]</td>
                     </tr>
                     <tr>
                         <td><b>ZOORAJI 恐龍公園</b></td>
                         <td>免費</td>
                         <td>免費</td>
                         <td><b>₩0</b></td>
-                        <td>免門票</td>
+                        <td>免門票[cite: 4]</td>
                     </tr>
                     <tr>
                         <td><b>釜山兒童大公園</b></td>
                         <td>免費</td>
                         <td>免費</td>
                         <td><b>₩0</b></td>
-                        <td>免門票</td>
-                    </tr>
-                    <tr>
-                        <td><b>金井山城纜車</b> (D7)</td>
-                        <td>₩11,000</td>
-                        <td>₩6,000 (兒童)</td>
-                        <td><b>₩28,000</b></td>
-                        <td>❌ 需自費購票</td>
+                        <td>免門票[cite: 4]</td>
                     </tr>
                 </tbody>
             </table>
-            <small style="color:var(--text-muted); display:block; margin-top:4px;">* 1 歲小女兒全景點皆為免費入場（請隨身攜帶護照備查）。</small>
-        </div>         
+            <small style="color:var(--text-muted); display:block; margin-top:4px;">* 1 歲小女兒全景點皆為免費入場（請隨身攜帶護照備查）[cite: 4]。</small>
+        </div>
     </div>
 
     <!-- Modal 4: 美食地圖 (單一地圖容器 + 定位) -->
@@ -3126,6 +3109,21 @@
                 }, 350);
             }
         };
+        // 開啟天空膠囊列車官方電子車票
+        function openCapsuleTicket() {
+            const ticketUrl = "https://www.tbluelinepark.com/m/mobileTicket/RS26018276646/A5E7524D9B0C307728AB5343EF01B65F93A70BD7511CBBDFBEE0906BAEC7F2A1";
+            window.open(ticketUrl, '_blank');
+        }
+        // 開啟 Klook 網頁/ App 頁面
+        function openKlookApp(url) {
+            if (!url) return;
+            window.open(url, '_blank');
+        }
+
+        // 開啟 Visit Busan Pass 官方網頁/App 兌換頁
+        function openPassApp() {
+            window.open("https://www.visitbusanpass.com/", '_blank');
+        }
     </script>
     <!-- 全螢幕大字卡 Modal 容器 -->
     <div id="big-card-modal" class="big-card-overlay" onclick="closeBigCard()">
